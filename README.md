@@ -21,6 +21,14 @@ npm run build
 This is a clickable prototype: data is seeded with a demo community and saved in
 the browser (localStorage). "Reset demo data" is at the bottom of the Rules page.
 
+## Live demo
+
+https://richwitag.github.io/Prop_Junkies_App/
+
+Deployed by `.github/workflows/deploy.yml` on every push. In the repo's
+**Settings → Pages**, *Source* must be set to **GitHub Actions** (not "Deploy from a branch",
+which serves the unbuilt source and shows a blank page).
+
 ## What's in it
 
 | Screen | What it does |
