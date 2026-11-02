@@ -161,3 +161,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb
 .price { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
 .price .muted { font-size: 15px; font-weight: 500; }
 @media (min-width: 640px) { .sheet-backdrop { align-items: center; } }
+.back { display: flex; align-items: center; gap: 4px; margin-left: -6px; padding: 4px 10px 4px 6px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font-weight: 700; font-size: 16px; cursor: pointer; }
+.back span { font-size: 26px; line-height: 1; margin-top: -3px; }
+.back:hover { background: var(--surface); }

@@ -7,12 +7,31 @@ import { Profile } from "./components/Profile";
 import { Rules } from "./components/Rules";
 import { CURRENT_USER_ID } from "./data/seed";
 
+const getRoute = () => window.location.hash.replace(/^#/, "") || "/feed";
+
+// How many in-app pages deep we are, so Back only steps through history we created
+// (a profile opened from a shared link goes to the feed instead of leaving the app).
+let depth = 0;
+
+function goBack() {
+  if (depth > 0) window.history.back();
+  else window.location.hash = "/feed";
+}
+
 function useHashRoute() {
-  const get = () => window.location.hash.replace(/^#/, "") || "/feed";
-  const [route, setRoute] = useState(get);
+  const [route, setRoute] = useState(getRoute);
   useEffect(() => {
-    const on = () => {
-      setRoute(get());
+    const on = (e: HashChangeEvent) => {
+      // Going back to the previous URL means we popped a level; anything else pushed one.
+      const prev = new URL(e.oldURL).hash.replace(/^#/, "") || "/feed";
+      if (prevStack[prevStack.length - 1] === getRoute()) {
+        prevStack.pop();
+        depth = Math.max(0, depth - 1);
+      } else {
+        prevStack.push(prev);
+        depth++;
+      }
+      setRoute(getRoute());
       window.scrollTo(0, 0);
     };
     window.addEventListener("hashchange", on);
@@ -20,6 +39,8 @@ function useHashRoute() {
   }, []);
   return route;
 }
+
+const prevStack: string[] = [];
 
 const NAV = [
   { to: "/feed", label: "Feed", icon: "🏠" },
@@ -41,12 +62,20 @@ export default function App() {
   else if (profile) (page = <Profile key={profile[1]} userId={profile[1]} />), (title = "Profile");
   else page = <Feed />;
 
+  const isTab = NAV.some((n) => n.to === route) || route === "/feed";
+
   return (
     <div className="app">
       <header className="topbar">
-        <Link to="/feed" className="brand">
-          <span className="brand-mark">PJ</span> Prop Junkies
-        </Link>
+        {isTab ? (
+          <Link to="/feed" className="brand">
+            <span className="brand-mark">PJ</span> Prop Junkies
+          </Link>
+        ) : (
+          <button className="back" onClick={goBack} aria-label="Back">
+            <span aria-hidden>‹</span> Back
+          </button>
+        )}
         <span className="topbar-title">{title}</span>
       </header>
       <main>{page}</main>
