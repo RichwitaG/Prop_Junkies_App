@@ -9,7 +9,7 @@ type Tab = (typeof TABS)[number];
 const SPORT_FILTERS = ["All", ...SPORTS] as const;
 
 export function Feed() {
-  const { picks, following, statsFor } = useStore();
+  const { picks, following, subscriptions, statsFor } = useStore();
   const [tab, setTab] = useState<Tab>("Following");
   const [sport, setSport] = useState<"All" | Sport>("All");
 
@@ -26,7 +26,7 @@ export function Feed() {
           .slice(0, 40)
       : visible
           .filter((p) => p.result === "pending")
-          .filter((p) => tab === "Community" || following.includes(p.userId))
+          .filter((p) => tab === "Community" || following.includes(p.userId) || subscriptions.includes(p.userId))
           .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
   // Community tab: most-tailed first, so people see what the crowd is on.

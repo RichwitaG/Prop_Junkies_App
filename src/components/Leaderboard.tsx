@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CURRENT_USER_ID } from "../data/seed";
 import type { LeaderStats } from "../domain/standing";
 import type { User } from "../domain/types";
+import { usd } from "../domain/monetization";
 import { pct, units } from "../format";
 import { useStore } from "../store";
 import { Avatar, Chips, Link, StandingBadge } from "./common";
@@ -10,7 +11,7 @@ const SORTS = ["Hit rate", "Units", "ROI"] as const;
 type Sort = (typeof SORTS)[number];
 
 export function Leaderboard() {
-  const { users, statsFor, following, dispatch } = useStore();
+  const { users, statsFor, following, isSelling, dispatch } = useStore();
   const [sort, setSort] = useState<Sort>("Hit rate");
 
   const rows = users
@@ -36,6 +37,7 @@ export function Leaderboard() {
             <small>
               {stats.record.wins}-{stats.record.losses}
               {stats.record.pushes > 0 && `-${stats.record.pushes}`} · {units(stats.unitsNet)}
+              {isSelling(user.id) && <> · {usd(user.creator!.price)}/mo</>}
             </small>
           </span>
         </Link>

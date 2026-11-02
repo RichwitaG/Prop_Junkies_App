@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { CURRENT_USER_ID } from "../data/seed";
 import { breakEven, winProfit } from "../domain/standing";
-import { MARKETS, SPORTS, type Market, type Sport } from "../domain/types";
+import { MARKETS, SPORTS, type Market, type PickAccess, type Sport } from "../domain/types";
 import { pct, uid } from "../format";
 import { useStore } from "../store";
 import { Link } from "./common";
@@ -14,7 +14,8 @@ function defaultStart() {
 }
 
 export function NewPick({ onDone }: { onDone: () => void }) {
-  const { statsFor, dispatch } = useStore();
+  const { statsFor, isSelling, dispatch } = useStore();
+  const selling = isSelling(CURRENT_USER_ID);
   const stats = statsFor(CURRENT_USER_ID);
   const [sport, setSport] = useState<Sport>("NFL");
   const [market, setMarket] = useState<Market>("Spread");
@@ -24,6 +25,7 @@ export function NewPick({ onDone }: { onDone: () => void }) {
   const [unitsText, setUnitsText] = useState("1");
   const [startsAt, setStartsAt] = useState(defaultStart);
   const [analysis, setAnalysis] = useState("");
+  const [access, setAccess] = useState<PickAccess>("subscribers");
 
   if (stats.status === "suspended") {
     return (
@@ -63,6 +65,7 @@ export function NewPick({ onDone }: { onDone: () => void }) {
         createdAt: new Date().toISOString(),
         startsAt: start.toISOString(),
         result: "pending",
+        access: selling ? access : "free",
         tailedBy: [],
       },
     });
@@ -120,6 +123,21 @@ export function NewPick({ onDone }: { onDone: () => void }) {
         Why? (optional)
         <textarea value={analysis} onChange={(e) => setAnalysis(e.target.value)} rows={3} maxLength={500} placeholder="Share your reasoning — the community learns from it." />
       </label>
+      {selling ? (
+        <fieldset className="seg">
+          <legend>Who can see it before the game?</legend>
+          {(["subscribers", "free"] as const).map((a) => (
+            <label key={a} className={access === a ? "seg-opt active" : "seg-opt"}>
+              <input type="radio" name="access" checked={access === a} onChange={() => setAccess(a)} />
+              {a === "subscribers" ? "🔒 Subscribers only" : "🌐 Free for everyone"}
+            </label>
+          ))}
+        </fieldset>
+      ) : (
+        <p className="muted small">
+          This pick will be free. <Link to={`/u/${CURRENT_USER_ID}`}>Turn on subscriptions</Link> to post subscriber-only picks.
+        </p>
+      )}
       {!valid && (game || selection) && <ul className="errors">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
       <p className="muted small">Picks lock at game time and can't be edited — every pick counts toward your hit rate.</p>
       <button className="btn btn-primary btn-block" disabled={!valid}>

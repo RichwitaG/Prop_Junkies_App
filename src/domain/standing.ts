@@ -131,3 +131,11 @@ export function breakEven(odds: number): number {
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
+
+/**
+ * Only creators with a proven, healthy record can charge for picks:
+ * at least MIN_GRADED_PICKS graded and not suspended.
+ */
+export function canMonetize(status: StandingStatus): boolean {
+  return status === "good" || status === "warning";
+}

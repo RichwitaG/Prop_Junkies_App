@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
 import { buildSeed, CURRENT_USER_ID } from "./data/seed";
-import { computeStats, type LeaderStats } from "./domain/standing";
-import type { Pick, PickResult, User } from "./domain/types";
+import { canMonetize, computeStats, type LeaderStats } from "./domain/standing";
+import type { CreatorSettings, Pick, PickResult, User } from "./domain/types";
 
 /**
  * Client-side store for the prototype. Everything lives in localStorage so the
@@ -13,6 +13,8 @@ interface State {
   users: User[];
   picks: Pick[];
   following: string[];
+  /** Creator ids the current user pays for. */
+  subscriptions: string[];
 }
 
 type Action =
@@ -23,9 +25,12 @@ type Action =
   | { type: "tail"; pickId: string }
   | { type: "grade"; pickId: string; result: PickResult }
   | { type: "updateProfile"; patch: Partial<{ displayName: string; handle: string; bio: string }> }
+  | { type: "subscribe"; userId: string }
+  | { type: "unsubscribe"; userId: string }
+  | { type: "updateCreator"; patch: Partial<CreatorSettings> }
   | { type: "reset" };
 
-const STORAGE_KEY = "propjunkies:v1";
+const STORAGE_KEY = "propjunkies:v2";
 
 function load(): State {
   try {
@@ -75,9 +80,39 @@ function reducer(state: State, action: Action): State {
         ...state,
         users: state.users.map((u) => (u.id === CURRENT_USER_ID ? { ...u, ...action.patch } : u)),
       };
+    case "subscribe":
+      if (state.subscriptions.includes(action.userId)) return state;
+      return {
+        ...state,
+        subscriptions: [...state.subscriptions, action.userId],
+        following: state.following.includes(action.userId) ? state.following : [...state.following, action.userId],
+        users: bumpSubs(state.users, action.userId, 1),
+      };
+    case "unsubscribe":
+      if (!state.subscriptions.includes(action.userId)) return state;
+      return {
+        ...state,
+        subscriptions: state.subscriptions.filter((id) => id !== action.userId),
+        users: bumpSubs(state.users, action.userId, -1),
+      };
+    case "updateCreator":
+      return {
+        ...state,
+        users: state.users.map((u) =>
+          u.id === CURRENT_USER_ID
+            ? { ...u, creator: { enabled: false, price: 9.99, perks: [], subscriberCount: 0, ...u.creator, ...action.patch } }
+            : u,
+        ),
+      };
     case "reset":
       return buildSeed();
   }
+}
+
+function bumpSubs(users: User[], id: string, delta: number): User[] {
+  return users.map((u) =>
+    u.id === id && u.creator ? { ...u, creator: { ...u.creator, subscriberCount: Math.max(0, u.creator.subscriberCount + delta) } } : u,
+  );
 }
 
 interface Store extends State {
@@ -86,6 +121,10 @@ interface Store extends State {
   userById: (id: string) => User | undefined;
   statsFor: (userId: string) => LeaderStats;
   picksFor: (userId: string) => Pick[];
+  /** Is this creator currently selling a subscription (enabled + allowed by their standing)? */
+  isSelling: (userId: string) => boolean;
+  /** Can the current user see this pick's details? */
+  canSee: (pick: Pick) => boolean;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -110,20 +149,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     const statsCache = new Map<string, LeaderStats>();
     const picksFor = (id: string) => byUser.get(id) ?? [];
+    const statsFor = (id: string) => {
+      let s = statsCache.get(id);
+      if (!s) {
+        s = computeStats(picksFor(id));
+        statsCache.set(id, s);
+      }
+      return s;
+    };
+    const userById = (id: string) => state.users.find((u) => u.id === id);
+    const isSelling = (id: string) => !!userById(id)?.creator?.enabled && canMonetize(statsFor(id).status);
     return {
       ...state,
       me: state.users.find((u) => u.id === CURRENT_USER_ID)!,
       dispatch,
-      userById: (id) => state.users.find((u) => u.id === id),
+      userById,
       picksFor,
-      statsFor: (id) => {
-        let s = statsCache.get(id);
-        if (!s) {
-          s = computeStats(picksFor(id));
-          statsCache.set(id, s);
-        }
-        return s;
-      },
+      statsFor,
+      isSelling,
+      // Graded picks are always public so a creator's record can't be hidden behind a paywall.
+      // If a creator stops selling (e.g. suspended), their gated picks are no longer gated.
+      canSee: (p) =>
+        p.access === "free" ||
+        p.result !== "pending" ||
+        p.userId === CURRENT_USER_ID ||
+        !isSelling(p.userId) ||
+        state.subscriptions.includes(p.userId),
     };
   }, [state]);
 

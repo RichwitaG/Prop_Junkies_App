@@ -52,24 +52,28 @@ interface SeedLeader {
   skill: number;
   graded: number;
   pending: number;
+  /** [monthly price, subscribers] if they sell a subscription. */
+  sub?: [number, number];
 }
 
 const LEADERS: SeedLeader[] = [
-  { user: { id: "u_sharpside", handle: "sharpside", displayName: "Sharp Side Sam", bio: "Former oddsmaker. NFL sides & totals. 1u = 1% of bankroll.", avatarColor: "#22c55e", verified: true }, skill: 0.6, graded: 64, pending: 3 },
-  { user: { id: "u_courtvision", handle: "courtvision", displayName: "Court Vision", bio: "NBA props only. I watch every game so you don't have to.", avatarColor: "#f97316", verified: true }, skill: 0.57, graded: 58, pending: 4 },
-  { user: { id: "u_icecold", handle: "icecoldlocks", displayName: "Ice Cold Locks", bio: "Hockey nerd. Puck lines and SOG props.", avatarColor: "#38bdf8" }, skill: 0.54, graded: 41, pending: 2 },
-  { user: { id: "u_diamond", handle: "diamonddata", displayName: "Diamond Data", bio: "Statcast-driven MLB plays. Process > results.", avatarColor: "#a855f7" }, skill: 0.53, graded: 47, pending: 2 },
+  { user: { id: "u_sharpside", handle: "sharpside", displayName: "Sharp Side Sam", bio: "Former oddsmaker. NFL sides & totals. 1u = 1% of bankroll.", avatarColor: "#22c55e", verified: true }, skill: 0.6, graded: 64, pending: 3, sub: [19.99, 1840] },
+  { user: { id: "u_courtvision", handle: "courtvision", displayName: "Court Vision", bio: "NBA props only. I watch every game so you don't have to.", avatarColor: "#f97316", verified: true }, skill: 0.57, graded: 58, pending: 4, sub: [14.99, 1215] },
+  { user: { id: "u_icecold", handle: "icecoldlocks", displayName: "Ice Cold Locks", bio: "Hockey nerd. Puck lines and SOG props.", avatarColor: "#38bdf8" }, skill: 0.54, graded: 41, pending: 2, sub: [9.99, 402] },
+  { user: { id: "u_diamond", handle: "diamonddata", displayName: "Diamond Data", bio: "Statcast-driven MLB plays. Process > results.", avatarColor: "#a855f7" }, skill: 0.53, graded: 47, pending: 2, sub: [12.99, 538] },
   { user: { id: "u_gobirds", handle: "gobirds52", displayName: "Go Birds 52", bio: "Philly everything. Mostly Eagles, sometimes Sixers.", avatarColor: "#10b981" }, skill: 0.49, graded: 33, pending: 2 },
-  { user: { id: "u_pitchside", handle: "pitchside", displayName: "Pitchside", bio: "Premier League & Champions League.", avatarColor: "#eab308" }, skill: 0.5, graded: 26, pending: 2 },
-  { user: { id: "u_fademe", handle: "fademe_parlays", displayName: "Fade Me Parlays", bio: "Long shots only. Ride or die.", avatarColor: "#ef4444" }, skill: 0.36, graded: 36, pending: 2 },
-  { user: { id: "u_lockking", handle: "lock_king99", displayName: "Lock King", bio: "100% locks 🔒🔒🔒 DM for VIP", avatarColor: "#64748b" }, skill: 0.22, graded: 30, pending: 0 },
+  { user: { id: "u_pitchside", handle: "pitchside", displayName: "Pitchside", bio: "Premier League & Champions League.", avatarColor: "#eab308" }, skill: 0.5, graded: 26, pending: 2, sub: [7.99, 161] },
+  { user: { id: "u_fademe", handle: "fademe_parlays", displayName: "Fade Me Parlays", bio: "Long shots only. Ride or die.", avatarColor: "#ef4444" }, skill: 0.36, graded: 36, pending: 2, sub: [4.99, 290] },
+  { user: { id: "u_lockking", handle: "lock_king99", displayName: "Lock King", bio: "100% locks 🔒🔒🔒 DM for VIP", avatarColor: "#64748b" }, skill: 0.22, graded: 30, pending: 0, sub: [49.99, 37] },
   { user: { id: "u_rookie", handle: "rookie_rob", displayName: "Rookie Rob", bio: "New here, learning the ropes.", avatarColor: "#ec4899" }, skill: 0.55, graded: 7, pending: 2 },
 ];
 
 const ODDS_POOL = [-110, -110, -110, -115, -105, -120, +100, +120, +145, -135, +165];
 
-export function buildSeed(now = Date.now()): { users: User[]; picks: Pick[]; following: string[] } {
+export function buildSeed(now = Date.now()): { users: User[]; picks: Pick[]; following: string[]; subscriptions: string[] } {
   const rand = mulberry32(52);
+  // Separate stream so adding fields never reshuffles the leaders' records.
+  const accessRand = mulberry32(7);
   const pickFrom = <T,>(arr: T[]) => arr[Math.floor(rand() * arr.length)];
   const HOUR = 3600_000;
 
@@ -87,7 +91,16 @@ export function buildSeed(now = Date.now()): { users: User[]; picks: Pick[]; fol
   let id = 0;
 
   for (const leader of LEADERS) {
-    users.push({ ...leader.user, joinedAt: new Date(now - 200 * 24 * HOUR).toISOString() });
+    users.push({
+      ...leader.user,
+      joinedAt: new Date(now - 200 * 24 * HOUR).toISOString(),
+      creator: leader.sub && {
+        enabled: true,
+        price: leader.sub[0],
+        subscriberCount: leader.sub[1],
+        perks: ["Every pick, before the line moves", "Full write-ups on each play", "Subscriber-only chat"],
+      },
+    });
     const total = leader.graded + leader.pending;
     for (let i = 0; i < total; i++) {
       const g = pickFrom(GAMES);
@@ -124,10 +137,12 @@ export function buildSeed(now = Date.now()): { users: User[]; picks: Pick[]; fol
         startsAt: new Date(startsAt).toISOString(),
         result,
         gradedAt: isPending ? undefined : new Date(startsAt + 3 * HOUR).toISOString(),
+        // Creators keep about a third of picks free as a sample; the rest are for subscribers.
+        access: leader.sub && accessRand() < 0.65 ? "subscribers" : "free",
         tailedBy: tailers,
       });
     }
   }
 
-  return { users, picks, following: ["u_sharpside", "u_courtvision"] };
+  return { users, picks, following: ["u_sharpside", "u_courtvision", "u_icecold"], subscriptions: ["u_courtvision"] };
 }

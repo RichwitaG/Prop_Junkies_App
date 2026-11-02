@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEven, computeStats, STANDING_RULES, winProfit } from "./standing";
+import { breakEven, canMonetize, computeStats, STANDING_RULES, winProfit } from "./standing";
 import type { Pick, PickResult } from "./types";
 
 let n = 0;
@@ -20,6 +20,7 @@ function pick(result: PickResult, opts: Partial<Pick> = {}): Pick {
     startsAt: t,
     result,
     gradedAt: result === "pending" ? undefined : t,
+    access: "free",
     tailedBy: [],
     ...opts,
   };
@@ -86,5 +87,14 @@ describe("odds helpers", () => {
   it("breakEven", () => {
     expect(breakEven(-110)).toBeCloseTo(0.5238, 3);
     expect(breakEven(100)).toBe(0.5);
+  });
+});
+
+describe("canMonetize", () => {
+  it("only lets ranked creators in good standing or at-risk charge", () => {
+    expect(canMonetize(computeStats(picks(10, 10)).status)).toBe(true);
+    expect(canMonetize(computeStats(picks(6, 14)).status)).toBe(true);
+    expect(canMonetize(computeStats(picks(5, 15)).status)).toBe(false);
+    expect(canMonetize(computeStats(picks(5, 0)).status)).toBe(false);
   });
 });

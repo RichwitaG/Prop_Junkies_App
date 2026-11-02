@@ -1,4 +1,5 @@
 import { STANDING_RULES as R } from "../domain/standing";
+import { PLATFORM_FEE } from "../domain/monetization";
 import { pct } from "../format";
 import { useStore } from "../store";
 
@@ -14,7 +15,7 @@ export function Rules() {
 
       <h3>Leaders help the market, not hurt it</h3>
       <p>
-        Anyone who posts picks is a leader, and people put real money behind leaders. So we hold leaders to a minimum
+        Anyone who posts picks is a leader, and fans pay for and act on leaders' picks. So we hold leaders to a minimum
         standard:
       </p>
       <ul>
@@ -35,6 +36,17 @@ export function Rules() {
         </li>
       </ul>
 
+      <h3>Earning as a creator</h3>
+      <p>
+        Creators can sell a monthly subscription, like Patreon or OnlyFans for picks. You set the price and choose which
+        picks are free and which are for subscribers. We keep {pct(PLATFORM_FEE, 0)}; you keep the rest.
+      </p>
+      <ul>
+        <li>• Paid subscriptions unlock after {R.minGradedPicks} graded picks — fans pay for a proven record.</li>
+        <li>• Subscriber-only picks become public once they're graded, so every creator's full record is visible to everyone.</li>
+        <li>• Suspended creators can't charge. Billing pauses for all their subscribers automatically.</li>
+      </ul>
+
       <h3>Judged on current form</h3>
       <p>
         Standing is based on your last {R.rollingWindow} graded picks, so an old hot streak can't hide a cold run — and a
@@ -51,7 +63,7 @@ export function Rules() {
       </p>
 
       <p className="muted small">
-        Prop Junkies is for entertainment and research. We don't take bets. 21+. If gambling stops being fun, call
+        Prop Junkies is a community, not a sportsbook — we never take or place bets. Picks are opinions, not guarantees. 21+. If gambling stops being fun, call
         1-800-GAMBLER.
       </p>
 

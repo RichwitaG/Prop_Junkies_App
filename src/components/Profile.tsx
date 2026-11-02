@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { CURRENT_USER_ID } from "../data/seed";
-import { STANDING_RULES } from "../domain/standing";
+import { monthlyPayout, PLATFORM_FEE, PRICE_MAX, PRICE_MIN, usd } from "../domain/monetization";
+import { canMonetize, STANDING_RULES } from "../domain/standing";
 import { pct, units } from "../format";
 import { useStore } from "../store";
 import { Avatar, Chips, Link, StandingBadge } from "./common";
 import { PickCard } from "./PickCard";
+import { SubscribeButton } from "./Subscribe";
 
 const TABS = ["Open", "History"] as const;
 
 export function Profile({ userId }: { userId: string }) {
-  const { userById, statsFor, picksFor, following, dispatch } = useStore();
+  const { userById, statsFor, picksFor, following, isSelling, dispatch } = useStore();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Open");
   const [editing, setEditing] = useState(false);
   const user = userById(userId);
@@ -32,7 +34,11 @@ export function Profile({ userId }: { userId: string }) {
               {user.displayName}
               {user.verified && <span className="verified">✓</span>}
             </h2>
-            <div className="muted">@{user.handle} · {tails.toLocaleString()} tails received</div>
+            <div className="muted">
+              @{user.handle}
+              {isSelling(userId) && <> · {user.creator!.subscriberCount.toLocaleString()} subscribers</>} ·{" "}
+              {tails.toLocaleString()} tails
+            </div>
           </div>
           {mine ? (
             <button className="btn btn-sm" onClick={() => setEditing((e) => !e)}>
@@ -41,7 +47,7 @@ export function Profile({ userId }: { userId: string }) {
           ) : (
             stats.status !== "suspended" && (
               <button
-                className={isFollowing ? "btn btn-active" : "btn btn-primary"}
+                className={isFollowing ? "btn btn-sm btn-active" : "btn btn-sm"}
                 onClick={() => dispatch({ type: isFollowing ? "unfollow" : "follow", userId })}
               >
                 {isFollowing ? "Following" : "Follow"}
@@ -54,6 +60,17 @@ export function Profile({ userId }: { userId: string }) {
 
         <StandingBanner />
 
+        {!mine && isSelling(userId) && (
+          <div className="creator-box">
+            <ul className="perks">
+              {user.creator!.perks.map((p) => (
+                <li key={p}>✓ {p}</li>
+              ))}
+            </ul>
+            <SubscribeButton userId={userId} block />
+          </div>
+        )}
+
         <div className="stats-grid">
           <Stat label="Hit rate" value={pct(stats.windowHitRate)} hint={`last ${stats.windowSize}`} />
           <Stat label="Record" value={`${stats.record.wins}-${stats.record.losses}-${stats.record.pushes}`} hint="W-L-P" />
@@ -64,6 +81,8 @@ export function Profile({ userId }: { userId: string }) {
         </div>
         <HitRateMeter value={stats.windowHitRate} />
       </div>
+
+      {mine && <CreatorSettingsPanel />}
 
       <Chips options={TABS} value={tab} onChange={setTab} />
       {mine && tab === "Open" && stats.status !== "suspended" && (
@@ -85,6 +104,7 @@ export function Profile({ userId }: { userId: string }) {
         <div className="banner banner-suspended">
           <strong>Suspended.</strong> Hit rate over the last {stats.windowSize} graded picks fell below {pct(r.suspendBelow, 0)}.
           {mine ? " You can't post new picks while suspended." : " Their picks are hidden from the feed and can't be tailed."}
+          {user!.creator?.enabled && " Paid subscriptions are paused — subscribers aren't billed while suspended."}
         </div>
       );
     if (stats.status === "warning")
@@ -156,6 +176,82 @@ function EditProfile() {
         Bio
         <textarea value={me.bio} maxLength={160} rows={2} onChange={(e) => dispatch({ type: "updateProfile", patch: { bio: e.target.value } })} />
       </label>
+    </div>
+  );
+}
+
+function CreatorSettingsPanel() {
+  const { me, statsFor, dispatch } = useStore();
+  const stats = statsFor(me.id);
+  const c = me.creator;
+  const eligible = canMonetize(stats.status);
+  const [perksText, setPerksText] = useState((c?.perks ?? []).join("\n"));
+
+  return (
+    <div className="card creator-settings">
+      <div className="row-between">
+        <h3>Creator subscriptions</h3>
+        {eligible && (
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={!!c?.enabled}
+              onChange={(e) => dispatch({ type: "updateCreator", patch: { enabled: e.target.checked } })}
+            />
+            {c?.enabled ? "On" : "Off"}
+          </label>
+        )}
+      </div>
+
+      {!eligible ? (
+        <p className="muted small">
+          {stats.status === "suspended"
+            ? "Subscriptions are unavailable while you're suspended."
+            : `Post ${stats.picksUntilRanked} more graded pick${stats.picksUntilRanked === 1 ? "" : "s"} to unlock paid subscriptions. Fans pay for a proven record, so every creator builds one first.`}
+        </p>
+      ) : !c?.enabled ? (
+        <p className="muted small">Charge a monthly price for subscriber-only picks. You keep {pct(1 - PLATFORM_FEE, 0)}.</p>
+      ) : (
+        <div className="form">
+          <div className="row">
+            <label>
+              Monthly price (USD)
+              <input
+                type="number"
+                min={PRICE_MIN}
+                max={PRICE_MAX}
+                step="1"
+                value={c.price}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (v >= PRICE_MIN && v <= PRICE_MAX) dispatch({ type: "updateCreator", patch: { price: v } });
+                }}
+              />
+            </label>
+            <div className="stat">
+              <div className="stat-value pos">{usd(monthlyPayout(c.price, c.subscriberCount))}</div>
+              <div className="stat-label">
+                est. monthly payout · {c.subscriberCount} subs
+              </div>
+            </div>
+          </div>
+          <label>
+            What subscribers get (one per line)
+            <textarea
+              rows={3}
+              value={perksText}
+              onChange={(e) => {
+                setPerksText(e.target.value);
+                dispatch({ type: "updateCreator", patch: { perks: e.target.value.split("\n").map((l) => l.trim()).filter(Boolean) } });
+              }}
+            />
+          </label>
+          <p className="muted small">
+            Platform fee {pct(PLATFORM_FEE, 0)}. If your hit rate drops below {pct(STANDING_RULES.suspendBelow, 0)} you're
+            suspended and billing pauses for all your subscribers.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
