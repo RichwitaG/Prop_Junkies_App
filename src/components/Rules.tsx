@@ -1,0 +1,69 @@
+import { STANDING_RULES as R } from "../domain/standing";
+import { pct } from "../format";
+import { useStore } from "../store";
+
+export function Rules() {
+  const { dispatch } = useStore();
+  return (
+    <section className="card prose">
+      <h2>How scoring works</h2>
+      <p>
+        Every pick you post is tracked and graded automatically. Your <strong>hit rate</strong> is your wins divided by
+        your wins + losses. Pushes and voided games don't count either way.
+      </p>
+
+      <h3>Leaders help the market, not hurt it</h3>
+      <p>
+        Anyone who posts picks is a leader, and people put real money behind leaders. So we hold leaders to a minimum
+        standard:
+      </p>
+      <ul>
+        <li>
+          <span className="badge badge-provisional">Provisional</span> — fewer than {R.minGradedPicks} graded picks. You're
+          not ranked or judged yet.
+        </li>
+        <li>
+          <span className="badge badge-good">Good standing</span> — hit rate of {pct(R.warnBelow, 0)} or better.
+        </li>
+        <li>
+          <span className="badge badge-warning">At risk</span> — between {pct(R.suspendBelow, 0)} and {pct(R.warnBelow, 0)}.
+          You'll be warned before anything happens.
+        </li>
+        <li>
+          <span className="badge badge-suspended">Suspended</span> — below {pct(R.suspendBelow, 0)}. Your picks are
+          hidden from the feed, can't be tailed, and you can't post new ones.
+        </li>
+      </ul>
+
+      <h3>Judged on current form</h3>
+      <p>
+        Standing is based on your last {R.rollingWindow} graded picks, so an old hot streak can't hide a cold run — and a
+        rough patch from months ago won't haunt you forever. Your all-time record is always shown on your profile too.
+      </p>
+
+      <h3>No take-backs</h3>
+      <p>Picks lock when the game starts. You can delete a pick before then, but never after — the record is the record.</p>
+
+      <h3>Hit rate isn't everything</h3>
+      <p>
+        A -110 bet needs to win 52.4% of the time just to break even, and a +300 long shot only needs 25%. That's why
+        profiles also show <strong>units</strong> and <strong>ROI</strong> — check them before you tail.
+      </p>
+
+      <p className="muted small">
+        Prop Junkies is for entertainment and research. We don't take bets. 21+. If gambling stops being fun, call
+        1-800-GAMBLER.
+      </p>
+
+      <hr />
+      <button
+        className="btn btn-ghost btn-sm"
+        onClick={() => {
+          if (confirm("Reset all demo data?")) dispatch({ type: "reset" });
+        }}
+      >
+        Reset demo data
+      </button>
+    </section>
+  );
+}

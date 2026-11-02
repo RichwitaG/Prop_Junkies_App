@@ -1,0 +1,64 @@
+# Prop Junkies
+
+A social sports-betting community: follow the sharpest bettors, see what they're
+playing, tail their picks, and see what the whole community is on.
+
+**The core rule:** every leader gets an automatic hit-rate score, and leaders whose
+hit rate drops below **30%** are suspended. Leaders should help the market, not
+hurt it and profit from it.
+
+## Run it
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm test         # rules-engine tests
+npm run build
+```
+
+This is a clickable prototype: data is seeded with a demo community and saved in
+the browser (localStorage). "Reset demo data" is at the bottom of the Rules page.
+
+## What's in it
+
+| Screen | What it does |
+| --- | --- |
+| **Feed** | *Following* (open picks from people you follow), *Community* (all open picks, most-tailed first), *Results* (recently graded). Filter by sport. Tail a pick in one tap. |
+| **Leaderboard** | Ranked leaders sorted by hit rate, units or ROI. Provisional and suspended leaders are listed separately. |
+| **Profile** | Hit rate, W-L-P record, units, ROI, streak, and a meter showing where the leader sits relative to the warning/suspension lines. Open picks + history. |
+| **Post** | Sport, market, game, pick, odds, stake, game time, reasoning. Shows to-win and break-even %. Disabled when suspended. |
+| **Rules** | Plain-English explanation of scoring and suspension. |
+
+## Standing rules (`src/domain/standing.ts`)
+
+All thresholds live in `STANDING_RULES`:
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| `suspendBelow` | 30% | The suspension line. |
+| `warnBelow` | 40% | "At risk" warning band so nobody is suspended without notice. |
+| `minGradedPicks` | 20 | Nobody is ranked or judged on a tiny sample (a 1-4 start is noise). |
+| `rollingWindow` | 50 | Standing uses the last 50 graded picks — judged on current form. |
+
+- Hit rate = wins / (wins + losses). Pushes and voids never count.
+- Picks lock at game time; they can be deleted before but never after.
+- Suspended leaders: picks hidden from the feed, can't be tailed, can't post.
+
+## Project layout
+
+```
+src/
+  domain/      types + standing rules (pure, unit-tested — reuse on the backend)
+  data/seed.ts demo community
+  store.tsx    client-side state (swap for API calls later)
+  components/  screens
+```
+
+## Next steps toward production
+
+- Backend + auth (accounts, age verification 21+, geo-restrictions)
+- Odds/schedule feed so games are picked from a list, and automatic grading from a scores feed
+  (the "Demo grading" buttons on your own picks stand in for this)
+- Push notifications when someone you follow posts
+- Suspension appeals / reinstatement policy
+- Native app (the domain layer ports directly to React Native)
