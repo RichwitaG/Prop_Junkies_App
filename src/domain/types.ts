@@ -69,6 +69,8 @@ export interface User {
   avatarColor: string;
   joinedAt: string;
   verified?: boolean;
+  /** Sample account shown before launch; removed with private.scrub_demo(). */
+  isDemo?: boolean;
   creator?: CreatorSettings;
 }
 

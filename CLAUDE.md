@@ -25,4 +25,5 @@
 - Sign-in is email link only (Google/Apple later). Supabase's built-in email sender is limited (about 2 emails/hour, and
   free projects may only deliver to the project team's own addresses) and its email wording can't be changed on the free
   plan. Set up a custom email sender (SMTP) before inviting real users.
+- Demo accounts (`profiles.is_demo`, DEMO tag in the app) must be removed before launch: `select private.scrub_demo();`
 - Prototype switches in `app_config` (`allow_self_grading`, `allow_free_subscriptions`) must be turned off before launch.

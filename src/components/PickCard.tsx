@@ -3,7 +3,7 @@ import { pickNet } from "../domain/standing";
 import type { Leg, LockedPick, Pick, PickResult } from "../domain/types";
 import { odds, pct, relTime, units } from "../format";
 import { useStore } from "../store";
-import { Avatar, Link, StandingBadge } from "./common";
+import { Avatar, DemoTag, Link, StandingBadge } from "./common";
 import { SubscribeButton } from "./Subscribe";
 
 const RESULT_LABEL: Record<PickResult, string> = {
@@ -27,6 +27,7 @@ function Author({ userId }: { userId: string }) {
           <strong>
             {author.displayName}
             {author.verified && <span className="verified" title="Verified">✓</span>}
+            <DemoTag user={author} />
           </strong>
           <small>
             @{author.handle} · {pct(stats.windowHitRate, 0)} hit

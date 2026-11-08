@@ -4,7 +4,7 @@ import { canMonetize, STANDING_RULES, type LeaderStats } from "../domain/standin
 import type { User } from "../domain/types";
 import { pct, units } from "../format";
 import { useStore } from "../store";
-import { Avatar, Chips, Link, StandingBadge } from "./common";
+import { Avatar, Chips, DemoTag, Link, StandingBadge } from "./common";
 import { LockedCard, PickCard } from "./PickCard";
 import { SubscribeButton } from "./Subscribe";
 
@@ -40,11 +40,14 @@ export function Profile({ userId }: { userId: string }) {
             <h2>
               {user.displayName}
               {user.verified && <span className="verified">✓</span>}
+              <DemoTag user={user} />
             </h2>
             <div className="muted">
               @{user.handle}
-              {isSelling(userId) && <> · {user.creator!.subscriberCount.toLocaleString()} subscribers</>} ·{" "}
-              {tails.toLocaleString()} tails
+              {isSelling(userId) && (
+                <> · {user.creator!.subscriberCount.toLocaleString()} subscriber{user.creator!.subscriberCount === 1 ? "" : "s"}</>
+              )}{" "}
+              · {tails.toLocaleString()} tail{tails === 1 ? "" : "s"}
             </div>
           </div>
           {mine ? (

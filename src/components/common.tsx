@@ -32,6 +32,10 @@ export function StandingBadge({ status, compact }: { status: StandingStatus; com
   return <span className={`badge badge-${status}`}>{LABELS[status]}</span>;
 }
 
+export function DemoTag({ user }: { user: User }) {
+  return user.isDemo ? <span className="tag tag-demo" title="Sample account — removed at launch">DEMO</span> : null;
+}
+
 export function Link({ to, children, className }: { to: string; children: ReactNode; className?: string }) {
   return (
     <a href={`#${to}`} className={className}>

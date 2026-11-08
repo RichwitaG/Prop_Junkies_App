@@ -2,7 +2,9 @@
 
 Project: `prop-junkies` · `https://bhdipbiapkafegmpljpa.supabase.co`
 
-- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`.
+- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`.
+- `seed/demo_seed.sql` — 11 DEMO bettors with ~4 months of history (applied). An hourly job (`demo-tick`) grades
+  their finished picks and posts new ones so the feed stays alive.
 - `tests/rules_test.sql` — creates throwaway users, checks every rule (parlays, practice picks,
   locked picks, private money, suspension, who can grade/post), then rolls everything back.
 
@@ -20,6 +22,12 @@ Picks are created only through `post_ticket()` and graded only through `grade_le
 edit or insert ticket rows directly. Every change is written to `ticket_revisions`.
 
 ## Before launch
+
+Remove the demo community and its hourly job:
+
+```sql
+select private.scrub_demo();
+```
 
 Set both prototype switches in `app_config` to `false`:
 - `allow_self_grading` — authors grading their own picks (replace with automatic grading from the sports data feed)

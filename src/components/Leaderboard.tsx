@@ -4,7 +4,7 @@ import type { User } from "../domain/types";
 import { usd } from "../domain/monetization";
 import { pct, units } from "../format";
 import { useStore } from "../store";
-import { Avatar, Chips, Link, StandingBadge } from "./common";
+import { Avatar, Chips, DemoTag, Link, StandingBadge } from "./common";
 
 const SORTS = ["Hit rate", "Units", "ROI"] as const;
 type Sort = (typeof SORTS)[number];
@@ -35,6 +35,7 @@ export function Leaderboard() {
           <span>
             <strong>{user.displayName}</strong>
             <small>
+              <DemoTag user={user} />
               {stats.record.wins}-{stats.record.losses}
               {stats.record.pushes > 0 && `-${stats.record.pushes}`} · {units(stats.unitsNet)}
               {isSelling(user.id) && <> · {usd(user.creator!.price)}/mo</>}

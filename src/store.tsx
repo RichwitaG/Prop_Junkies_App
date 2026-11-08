@@ -100,6 +100,7 @@ async function loadData(myId: string | null): Promise<Data> {
       avatarColor: p.avatar_color,
       joinedAt: p.created_at,
       verified: p.verified,
+      isDemo: p.is_demo,
       creator: c && {
         enabled: enabled.get(p.id) ?? false,
         price: c.price_cents / 100,
