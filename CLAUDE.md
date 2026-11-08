@@ -15,3 +15,10 @@
 - Verified picks (slip-scan badge): skipped for now.
 - Still needed: a sports data provider whose terms allow showing data publicly.
 - The repo is public: never commit API keys or secrets.
+
+## Supabase
+
+- Project `prop-junkies`: https://bhdipbiapkafegmpljpa.supabase.co (publishable key is safe to commit; secret/service_role keys never).
+- Schema lives in `supabase/migrations/`; apply new files in order via the Management API
+  (`POST https://api.supabase.com/v1/projects/bhdipbiapkafegmpljpa/database/query`, token injected by the session proxy).
+- After any schema change, run `supabase/tests/rules_test.sql` and the security advisor.
