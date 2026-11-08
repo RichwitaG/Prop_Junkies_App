@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEven, canMonetize, computeStats, STANDING_RULES, winProfit } from "./standing";
+import { breakEven, canMonetize, computeStats, parlayOdds, STANDING_RULES, winProfit } from "./standing";
 import type { Pick, PickResult } from "./types";
 
 let n = 0;
@@ -9,10 +9,7 @@ function pick(result: PickResult, opts: Partial<Pick> = {}): Pick {
   return {
     id: `p${n}`,
     userId: "u1",
-    sport: "NFL",
-    game: "A @ B",
-    market: "Spread",
-    selection: "A -3",
+    isPractice: false,
     odds: -110,
     units: 1,
     analysis: "",
@@ -21,6 +18,7 @@ function pick(result: PickResult, opts: Partial<Pick> = {}): Pick {
     result,
     gradedAt: result === "pending" ? undefined : t,
     access: "free",
+    legs: [],
     tailedBy: [],
     ...opts,
   };
@@ -96,5 +94,24 @@ describe("canMonetize", () => {
     expect(canMonetize(computeStats(picks(6, 14)).status)).toBe(true);
     expect(canMonetize(computeStats(picks(5, 15)).status)).toBe(false);
     expect(canMonetize(computeStats(picks(5, 0)).status)).toBe(false);
+  });
+});
+
+describe("practice picks", () => {
+  it("never count toward record or standing", () => {
+    const list = [...picks(10, 10), ...Array.from({ length: 30 }, () => pick("loss", { isPractice: true }))];
+    const s = computeStats(list);
+    expect(s.record.losses).toBe(10);
+    expect(s.status).toBe("good");
+  });
+});
+
+describe("parlayOdds", () => {
+  it("matches the database calculation", () => {
+    expect(parlayOdds([-110, -110, -110])).toBe(596);
+    expect(parlayOdds([-110, -110])).toBe(264);
+    expect(parlayOdds([-500, -500])).toBe(-227);
+    expect(parlayOdds([150, -110])).toBe(377);
+    expect(parlayOdds([-110, null])).toBeNull();
   });
 });

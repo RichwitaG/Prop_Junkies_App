@@ -1,28 +1,35 @@
 import { useState } from "react";
-import { CURRENT_USER_ID } from "../data/seed";
 import { monthlyPayout, PLATFORM_FEE, PRICE_MAX, PRICE_MIN, usd } from "../domain/monetization";
-import { canMonetize, STANDING_RULES } from "../domain/standing";
+import { canMonetize, STANDING_RULES, type LeaderStats } from "../domain/standing";
+import type { User } from "../domain/types";
 import { pct, units } from "../format";
 import { useStore } from "../store";
 import { Avatar, Chips, Link, StandingBadge } from "./common";
-import { PickCard } from "./PickCard";
+import { LockedCard, PickCard } from "./PickCard";
 import { SubscribeButton } from "./Subscribe";
 
-const TABS = ["Open", "History"] as const;
+const OTHER_TABS = ["Open", "History"] as const;
+const MY_TABS = ["Open", "History", "Practice"] as const;
+type Tab = (typeof MY_TABS)[number];
 
 export function Profile({ userId }: { userId: string }) {
-  const { userById, statsFor, picksFor, following, isSelling, dispatch } = useStore();
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Open");
+  const { ready, myId, email, userById, statsFor, picksFor, locked, following, isSelling, actions } = useStore();
+  const [tab, setTab] = useState<Tab>("Open");
   const [editing, setEditing] = useState(false);
   const user = userById(userId);
+  if (!ready) return <div className="empty">Loading…</div>;
   if (!user) return <div className="empty">User not found.</div>;
 
   const stats = statsFor(userId);
-  const mine = userId === CURRENT_USER_ID;
+  const mine = userId === myId;
   const isFollowing = following.includes(userId);
   const all = [...picksFor(userId)].sort((a, b) => b.startsAt.localeCompare(a.startsAt));
-  const list = all.filter((p) => (tab === "Open" ? p.result === "pending" : p.result !== "pending"));
+  const list = all.filter((p) =>
+    tab === "Practice" ? p.isPractice : !p.isPractice && (tab === "Open" ? p.result === "pending" : p.result !== "pending"),
+  );
+  const lockedHere = tab === "Open" ? locked.filter((p) => p.userId === userId) : [];
   const tails = all.reduce((n, p) => n + p.tailedBy.length, 0);
+  const needsSetup = mine && user.handle.startsWith("user_");
 
   return (
     <section>
@@ -42,31 +49,39 @@ export function Profile({ userId }: { userId: string }) {
           </div>
           {mine ? (
             <button className="btn btn-sm" onClick={() => setEditing((e) => !e)}>
-              {editing ? "Done" : "Edit"}
+              {editing ? "Cancel" : "Edit"}
             </button>
           ) : (
             stats.status !== "suspended" && (
-              <button
-                className={isFollowing ? "btn btn-sm btn-active" : "btn btn-sm"}
-                onClick={() => dispatch({ type: isFollowing ? "unfollow" : "follow", userId })}
-              >
+              <button className={isFollowing ? "btn btn-sm btn-active" : "btn btn-sm"} onClick={() => actions.follow(userId, !isFollowing)}>
                 {isFollowing ? "Following" : "Follow"}
               </button>
             )
           )}
         </div>
 
-        {editing && mine ? <EditProfile /> : <p>{user.bio}</p>}
+        {needsSetup && !editing && (
+          <div className="banner banner-provisional">
+            <strong>Welcome!</strong> Pick a handle and display name so people can find you.{" "}
+            <button className="btn btn-sm btn-primary" onClick={() => setEditing(true)}>
+              Set up profile
+            </button>
+          </div>
+        )}
 
-        <StandingBanner />
+        {editing && mine ? <EditProfile user={user} onDone={() => setEditing(false)} /> : user.bio && <p>{user.bio}</p>}
+
+        <StandingBanner stats={stats} mine={mine} user={user} />
 
         {!mine && isSelling(userId) && (
           <div className="creator-box">
-            <ul className="perks">
-              {user.creator!.perks.map((p) => (
-                <li key={p}>✓ {p}</li>
-              ))}
-            </ul>
+            {user.creator!.perks.length > 0 && (
+              <ul className="perks">
+                {user.creator!.perks.map((p) => (
+                  <li key={p}>✓ {p}</li>
+                ))}
+              </ul>
+            )}
             <SubscribeButton userId={userId} block />
           </div>
         )}
@@ -84,44 +99,61 @@ export function Profile({ userId }: { userId: string }) {
 
       {mine && <CreatorSettingsPanel />}
 
-      <Chips options={TABS} value={tab} onChange={setTab} />
-      {mine && tab === "Open" && stats.status !== "suspended" && (
-        <Link to="/new" className="btn btn-primary btn-block">+ Post a pick</Link>
+      <Chips options={mine ? MY_TABS : OTHER_TABS} value={tab} onChange={setTab} />
+      {mine && tab !== "History" && (
+        <Link to="/new" className="btn btn-primary btn-block">
+          + Post a {tab === "Practice" ? "practice " : ""}pick
+        </Link>
       )}
-      {list.length === 0 && <div className="empty">No {tab === "Open" ? "open picks" : "graded picks"} yet.</div>}
+      {tab === "Practice" && <p className="muted small">Only you can see practice picks. They never count toward your record.</p>}
+      {list.length === 0 && lockedHere.length === 0 && (
+        <div className="empty">No {tab === "Open" ? "open" : tab === "History" ? "graded" : "practice"} picks yet.</div>
+      )}
       <div className="stack">
+        {lockedHere.map((p) => (
+          <LockedCard key={p.id} pick={p} showAuthor={false} />
+        ))}
         {list.map((p) => (
           <PickCard key={p.id} pick={p} showAuthor={false} />
         ))}
       </div>
+
+      {mine && (
+        <p className="muted small center">
+          Signed in as {email} ·{" "}
+          <button className="linklike" onClick={() => actions.signOut()}>
+            Sign out
+          </button>
+        </p>
+      )}
     </section>
   );
+}
 
-  function StandingBanner() {
-    const r = STANDING_RULES;
-    if (stats.status === "suspended")
-      return (
-        <div className="banner banner-suspended">
-          <strong>Suspended.</strong> Hit rate over the last {stats.windowSize} graded picks fell below {pct(r.suspendBelow, 0)}.
-          {mine ? " You can't post new picks while suspended." : " Their picks are hidden from the feed and can't be tailed."}
-          {user!.creator?.enabled && " Paid subscriptions are paused — subscribers aren't billed while suspended."}
-        </div>
-      );
-    if (stats.status === "warning")
-      return (
-        <div className="banner banner-warning">
-          <strong>At risk.</strong> Below {pct(r.warnBelow, 0)} — dropping under {pct(r.suspendBelow, 0)} triggers a suspension.
-        </div>
-      );
-    if (stats.status === "provisional")
-      return (
-        <div className="banner banner-provisional">
-          <strong>Provisional.</strong> {stats.picksUntilRanked} more graded pick{stats.picksUntilRanked === 1 ? "" : "s"} until
-          {mine ? " you're" : " they're"} ranked on the leaderboard.
-        </div>
-      );
-    return <StandingBadge status="good" />;
-  }
+function StandingBanner({ stats, mine, user }: { stats: LeaderStats; mine: boolean; user: User }) {
+  const r = STANDING_RULES;
+  if (stats.status === "suspended")
+    return (
+      <div className="banner banner-suspended">
+        <strong>Suspended.</strong> Hit rate over the last {stats.windowSize} graded picks fell below {pct(r.suspendBelow, 0)}.
+        {mine ? " You can't post real picks while suspended." : " Their picks are hidden from the feed and can't be tailed."}
+        {user.creator?.enabled && " Paid subscriptions are paused — subscribers aren't billed while suspended."}
+      </div>
+    );
+  if (stats.status === "warning")
+    return (
+      <div className="banner banner-warning">
+        <strong>At risk.</strong> Below {pct(r.warnBelow, 0)} — dropping under {pct(r.suspendBelow, 0)} triggers a suspension.
+      </div>
+    );
+  if (stats.status === "provisional")
+    return (
+      <div className="banner banner-provisional">
+        <strong>Provisional.</strong> {stats.picksUntilRanked} more graded pick{stats.picksUntilRanked === 1 ? "" : "s"} until
+        {mine ? " you're" : " they're"} ranked on the leaderboard.
+      </div>
+    );
+  return <StandingBadge status="good" />;
 }
 
 function Stat({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "pos" | "neg" }) {
@@ -156,36 +188,68 @@ function HitRateMeter({ value }: { value: number | null }) {
   );
 }
 
-function EditProfile() {
-  const { me, dispatch } = useStore();
+function EditProfile({ user, onDone }: { user: User; onDone: () => void }) {
+  const { actions } = useStore();
+  const [displayName, setDisplayName] = useState(user.displayName === "New member" ? "" : user.displayName);
+  const [handle, setHandle] = useState(user.handle.startsWith("user_") ? "" : user.handle);
+  const [bio, setBio] = useState(user.bio);
+  const [busy, setBusy] = useState(false);
+  const valid = displayName.trim().length > 0 && /^[a-z0-9_]{3,20}$/.test(handle);
+
   return (
-    <div className="form">
+    <form
+      className="form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!valid) return;
+        setBusy(true);
+        const ok = await actions.updateProfile({ displayName: displayName.trim(), handle, bio: bio.trim() });
+        setBusy(false);
+        if (ok) onDone();
+      }}
+    >
       <label>
         Display name
-        <input value={me.displayName} maxLength={30} onChange={(e) => dispatch({ type: "updateProfile", patch: { displayName: e.target.value } })} />
+        <input value={displayName} maxLength={30} onChange={(e) => setDisplayName(e.target.value)} placeholder="Sharp Side Sam" />
       </label>
       <label>
         Handle
         <input
-          value={me.handle}
+          value={handle}
           maxLength={20}
-          onChange={(e) => dispatch({ type: "updateProfile", patch: { handle: e.target.value.replace(/[^a-z0-9_]/gi, "").toLowerCase() } })}
+          onChange={(e) => setHandle(e.target.value.replace(/[^a-z0-9_]/gi, "").toLowerCase())}
+          placeholder="sharpside"
         />
+        <span className="muted small">3–20 characters: letters, numbers and _</span>
       </label>
       <label>
         Bio
-        <textarea value={me.bio} maxLength={160} rows={2} onChange={(e) => dispatch({ type: "updateProfile", patch: { bio: e.target.value } })} />
+        <textarea value={bio} maxLength={160} rows={2} onChange={(e) => setBio(e.target.value)} placeholder="What do you bet on?" />
       </label>
-    </div>
+      <button className="btn btn-primary" disabled={!valid || busy}>
+        {busy ? "Saving…" : "Save profile"}
+      </button>
+    </form>
   );
 }
 
 function CreatorSettingsPanel() {
-  const { me, statsFor, dispatch } = useStore();
-  const stats = statsFor(me.id);
-  const c = me.creator;
-  const eligible = canMonetize(stats.status);
+  const { me, statsFor, actions } = useStore();
+  const c = me?.creator;
+  const [price, setPrice] = useState(String(c?.price ?? 9.99));
   const [perksText, setPerksText] = useState((c?.perks ?? []).join("\n"));
+  const [busy, setBusy] = useState(false);
+  if (!me) return null;
+  const stats = statsFor(me.id);
+  const eligible = canMonetize(stats.status);
+  const priceNum = Number(price);
+  const priceOk = priceNum >= PRICE_MIN && priceNum <= PRICE_MAX;
+
+  const save = async (patch: Parameters<typeof actions.updateCreator>[0]) => {
+    setBusy(true);
+    await actions.updateCreator(patch);
+    setBusy(false);
+  };
 
   return (
     <div className="card creator-settings">
@@ -193,11 +257,7 @@ function CreatorSettingsPanel() {
         <h3>Creator subscriptions</h3>
         {eligible && (
           <label className="switch">
-            <input
-              type="checkbox"
-              checked={!!c?.enabled}
-              onChange={(e) => dispatch({ type: "updateCreator", patch: { enabled: e.target.checked } })}
-            />
+            <input type="checkbox" disabled={busy} checked={!!c?.enabled} onChange={(e) => save({ enabled: e.target.checked })} />
             {c?.enabled ? "On" : "Off"}
           </label>
         )}
@@ -212,45 +272,36 @@ function CreatorSettingsPanel() {
       ) : !c?.enabled ? (
         <p className="muted small">Charge a monthly price for subscriber-only picks. You keep {pct(1 - PLATFORM_FEE, 0)}.</p>
       ) : (
-        <div className="form">
+        <form
+          className="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (priceOk) save({ price: priceNum, perks: perksText.split("\n").map((l) => l.trim()).filter(Boolean) });
+          }}
+        >
           <div className="row">
             <label>
               Monthly price (USD)
-              <input
-                type="number"
-                min={PRICE_MIN}
-                max={PRICE_MAX}
-                step="1"
-                value={c.price}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  if (v >= PRICE_MIN && v <= PRICE_MAX) dispatch({ type: "updateCreator", patch: { price: v } });
-                }}
-              />
+              <input type="number" min={PRICE_MIN} max={PRICE_MAX} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
             </label>
             <div className="stat">
               <div className="stat-value pos">{usd(monthlyPayout(c.price, c.subscriberCount))}</div>
-              <div className="stat-label">
-                est. monthly payout · {c.subscriberCount} subs
-              </div>
+              <div className="stat-label">est. monthly payout · {c.subscriberCount} subs</div>
             </div>
           </div>
           <label>
             What subscribers get (one per line)
-            <textarea
-              rows={3}
-              value={perksText}
-              onChange={(e) => {
-                setPerksText(e.target.value);
-                dispatch({ type: "updateCreator", patch: { perks: e.target.value.split("\n").map((l) => l.trim()).filter(Boolean) } });
-              }}
-            />
+            <textarea rows={3} value={perksText} onChange={(e) => setPerksText(e.target.value)} placeholder={"Every pick, before the line moves\nFull write-ups"} />
           </label>
+          {!priceOk && <p className="errors">Price must be between {usd(PRICE_MIN)} and {usd(PRICE_MAX)}.</p>}
+          <button className="btn btn-primary" disabled={busy || !priceOk}>
+            {busy ? "Saving…" : "Save"}
+          </button>
           <p className="muted small">
             Platform fee {pct(PLATFORM_FEE, 0)}. If your hit rate drops below {pct(STANDING_RULES.suspendBelow, 0)} you're
             suspended and billing pauses for all your subscribers.
           </p>
-        </div>
+        </form>
       )}
     </div>
   );

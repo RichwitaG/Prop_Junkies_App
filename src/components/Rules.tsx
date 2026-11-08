@@ -1,10 +1,8 @@
 import { STANDING_RULES as R } from "../domain/standing";
 import { PLATFORM_FEE } from "../domain/monetization";
 import { pct } from "../format";
-import { useStore } from "../store";
 
 export function Rules() {
-  const { dispatch } = useStore();
   return (
     <section className="card prose">
       <h2>How scoring works</h2>
@@ -53,6 +51,15 @@ export function Rules() {
         rough patch from months ago won't haunt you forever. Your all-time record is always shown on your profile too.
       </p>
 
+      <h3>Parlays count as one pick</h3>
+      <p>
+        A parlay is one ticket with one result. Every leg has to hit for it to count as a win — one losing leg makes the
+        whole ticket a loss, no matter how many other legs hit.
+      </p>
+
+      <h3>Practice picks</h3>
+      <p>Try out ideas with practice picks. Only you can see them, and they never count toward your record or standing.</p>
+
       <h3>No take-backs</h3>
       <p>Picks lock when the game starts. You can delete a pick before then, but never after — the record is the record.</p>
 
@@ -67,15 +74,6 @@ export function Rules() {
         1-800-GAMBLER.
       </p>
 
-      <hr />
-      <button
-        className="btn btn-ghost btn-sm"
-        onClick={() => {
-          if (confirm("Reset all demo data?")) dispatch({ type: "reset" });
-        }}
-      >
-        Reset demo data
-      </button>
-    </section>
+</section>
   );
 }

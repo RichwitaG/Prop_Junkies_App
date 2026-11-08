@@ -6,10 +6,11 @@ import { Avatar } from "./common";
 
 /** Subscribe / unsubscribe button that opens a checkout sheet. */
 export function SubscribeButton({ userId, block, label }: { userId: string; block?: boolean; label?: string }) {
-  const { userById, subscriptions, isSelling, dispatch } = useStore();
+  const { myId, userById, subscriptions, isSelling, actions } = useStore();
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const user = userById(userId);
-  if (!user?.creator || !isSelling(userId)) return null;
+  if (!user?.creator || !isSelling(userId) || userId === myId) return null;
   const subscribed = subscriptions.includes(userId);
   const cls = `btn ${subscribed ? "btn-active" : "btn-primary"} ${block ? "btn-block" : ""}`;
 
@@ -17,10 +18,13 @@ export function SubscribeButton({ userId, block, label }: { userId: string; bloc
     <>
       <button
         className={cls}
-        onClick={() => {
-          if (!subscribed) setOpen(true);
-          else if (confirm(`Cancel your ${usd(user.creator!.price)}/mo subscription to ${user.displayName}?`))
-            dispatch({ type: "unsubscribe", userId });
+        disabled={busy}
+        onClick={async () => {
+          if (!subscribed) return setOpen(true);
+          if (!confirm(`Cancel your ${usd(user.creator!.price)}/mo subscription to ${user.displayName}?`)) return;
+          setBusy(true);
+          await actions.subscribe(userId, false);
+          setBusy(false);
         }}
       >
         {subscribed ? "Subscribed ✓" : label ?? `Subscribe · ${usd(user.creator.price)}/mo`}
@@ -31,7 +35,8 @@ export function SubscribeButton({ userId, block, label }: { userId: string; bloc
 }
 
 function SubscribeSheet({ userId, onClose }: { userId: string; onClose: () => void }) {
-  const { userById, statsFor, dispatch } = useStore();
+  const { userById, statsFor, actions } = useStore();
+  const [busy, setBusy] = useState(false);
   const user = userById(userId)!;
   const c = user.creator!;
   const s = statsFor(userId);
@@ -52,23 +57,28 @@ function SubscribeSheet({ userId, onClose }: { userId: string; onClose: () => vo
           {usd(c.price)}
           <span className="muted"> / month</span>
         </div>
-        <ul className="perks">
-          {c.perks.map((p) => (
-            <li key={p}>✓ {p}</li>
-          ))}
-        </ul>
+        {c.perks.length > 0 && (
+          <ul className="perks">
+            {c.perks.map((p) => (
+              <li key={p}>✓ {p}</li>
+            ))}
+          </ul>
+        )}
         <p className="muted small">
           Cancel anytime. If {user.displayName} is suspended, billing pauses automatically. Past performance doesn't
           guarantee future results.
         </p>
         <button
           className="btn btn-primary btn-block"
-          onClick={() => {
-            dispatch({ type: "subscribe", userId });
-            onClose();
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            const ok = await actions.subscribe(userId, true);
+            setBusy(false);
+            if (ok) onClose();
           }}
         >
-          Subscribe — demo, no charge
+          {busy ? "Subscribing…" : "Subscribe — test mode, no charge"}
         </button>
         <button className="btn btn-ghost btn-block" onClick={onClose}>
           Not now

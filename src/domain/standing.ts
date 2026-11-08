@@ -9,6 +9,8 @@ import type { Pick } from "./types";
  *
  * Guard-rails so the rule is fair:
  *  - Pushes and voids never count (they're neither a hit nor a miss).
+ *  - Practice picks never count toward anything here.
+ *  - A parlay is one ticket with one result (see Pick).
  *  - Nobody is judged until they have MIN_GRADED_PICKS graded picks
  *    (a 1-3 start is noise, not signal).
  *  - Enforcement looks at a rolling window of the most recent graded picks,
@@ -77,7 +79,8 @@ export function statusFor(windowHitRate: number | null, decidedCount: number): S
   return "good";
 }
 
-export function computeStats(picks: Pick[]): LeaderStats {
+export function computeStats(allPicks: Pick[]): LeaderStats {
+  const picks = allPicks.filter((p) => !p.isPractice);
   const record: PickRecord = { wins: 0, losses: 0, pushes: 0, pending: 0 };
   let unitsNet = 0;
   let risked = 0;
@@ -121,6 +124,13 @@ export function computeStats(picks: Pick[]): LeaderStats {
     status: statusFor(windowHitRate, decided.length),
     picksUntilRanked: Math.max(0, STANDING_RULES.minGradedPicks - decided.length),
   };
+}
+
+/** Combine leg odds into one parlay price (null if any leg has no odds). Mirrors parlay_odds() in SQL. */
+export function parlayOdds(legOdds: (number | null)[]): number | null {
+  if (legOdds.length === 0 || legOdds.some((o) => o === null || Math.abs(o) < 100)) return null;
+  const dec = (legOdds as number[]).reduce((d, o) => d * (o > 0 ? 1 + o / 100 : 1 + 100 / Math.abs(o)), 1);
+  return dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1));
 }
 
 /** Break-even hit rate for a given American price (e.g. -110 → 52.4%). */

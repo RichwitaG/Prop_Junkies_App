@@ -9,30 +9,55 @@ export const MARKETS: Market[] = ["Spread", "Moneyline", "Total", "Player Prop"]
 /** Who can see a pick before its game is graded. Graded picks are always public. */
 export type PickAccess = "free" | "subscribers";
 
-/** pending = game not graded yet; void = cancelled/postponed (never counts). */
+/** pending = not graded yet; void = cancelled/postponed (never counts). */
 export type PickResult = "pending" | "win" | "loss" | "push" | "void";
 
+export interface Leg {
+  id: string;
+  position: number;
+  sport: Sport;
+  game: string;
+  market: Market;
+  selection: string;
+  /** American odds for this leg, if known. */
+  odds: number | null;
+  startsAt: string;
+  result: PickResult;
+}
+
+/**
+ * A ticket is one pick: a single bet or a parlay. A parlay counts as ONE result —
+ * any losing leg makes it a loss; every remaining leg must win for a win.
+ */
 export interface Pick {
   id: string;
   userId: string;
-  sport: Sport;
-  /** e.g. "Eagles @ Cowboys" */
-  game: string;
-  market: Market;
-  /** e.g. "Eagles -3.5" or "Jalen Hurts o1.5 Pass TD" */
-  selection: string;
-  /** American odds, e.g. -110 or +145 */
+  isPractice: boolean;
+  access: PickAccess;
+  /** Whole-ticket American odds (the parlay price for multi-leg tickets). */
   odds: number;
   /** Stake in units (1u = the leader's standard bet). */
   units: number;
   analysis: string;
-  createdAt: string;
-  /** When the game starts; picks lock (no edits/deletes) after this. */
+  /** Earliest leg start; the ticket locks at this time. */
   startsAt: string;
-  result: PickResult;
+  createdAt: string;
   gradedAt?: string;
-  access: PickAccess;
+  result: PickResult;
+  legs: Leg[];
   /** User ids who tailed this pick. */
+  tailedBy: string[];
+}
+
+/** What a non-subscriber sees of a subscriber-only pick: the games, never the pick. */
+export interface LockedPick {
+  id: string;
+  userId: string;
+  startsAt: string;
+  createdAt: string;
+  legCount: number;
+  sports: Sport[];
+  games: string[];
   tailedBy: string[];
 }
 
@@ -44,7 +69,6 @@ export interface User {
   avatarColor: string;
   joinedAt: string;
   verified?: boolean;
-  /** Set when the user sells a paid subscription. */
   creator?: CreatorSettings;
 }
 
@@ -53,8 +77,9 @@ export interface CreatorSettings {
   enabled: boolean;
   /** Monthly price in USD. */
   price: number;
-  /** What subscribers get, shown on the profile. */
   perks: string[];
-  /** Paying subscribers (seed/demo figure; comes from billing in production). */
+  /** Active subscribers. */
   subscriberCount: number;
+  /** Enabled and standing allows charging (computed by the database). */
+  isSelling: boolean;
 }

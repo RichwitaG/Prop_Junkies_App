@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { CURRENT_USER_ID } from "../data/seed";
 import type { LeaderStats } from "../domain/standing";
 import type { User } from "../domain/types";
 import { usd } from "../domain/monetization";
@@ -11,11 +10,12 @@ const SORTS = ["Hit rate", "Units", "ROI"] as const;
 type Sort = (typeof SORTS)[number];
 
 export function Leaderboard() {
-  const { users, statsFor, following, isSelling, dispatch } = useStore();
+  const { ready, myId, users, statsFor, following, isSelling, actions } = useStore();
   const [sort, setSort] = useState<Sort>("Hit rate");
 
   const rows = users
-    .filter((u) => u.id !== CURRENT_USER_ID || statsFor(u.id).record.wins + statsFor(u.id).record.losses > 0)
+    // Everyone with at least one graded (non-practice) pick.
+    .filter((u) => statsFor(u.id).record.wins + statsFor(u.id).record.losses > 0)
     .map((u) => ({ user: u, stats: statsFor(u.id) }));
 
   const key = (s: LeaderStats) =>
@@ -45,10 +45,10 @@ export function Leaderboard() {
           <strong>{pct(stats.windowHitRate)}</strong>
           <StandingBadge status={stats.status} compact />
         </span>
-        {user.id !== CURRENT_USER_ID && stats.status !== "suspended" && (
+        {user.id !== myId && stats.status !== "suspended" && (
           <button
             className={isFollowing ? "btn btn-sm btn-active" : "btn btn-sm"}
-            onClick={() => dispatch({ type: isFollowing ? "unfollow" : "follow", userId: user.id })}
+            onClick={() => actions.follow(user.id, !isFollowing)}
           >
             {isFollowing ? "Following" : "Follow"}
           </button>
@@ -63,11 +63,18 @@ export function Leaderboard() {
       <p className="muted small">
         Hit rate is measured over each leader's most recent graded picks. <Link to="/rules">How scoring works →</Link>
       </p>
+      {ready && rows.length === 0 && (
+        <div className="empty">
+          Nobody has a graded pick yet. <Link to="/new">Post the first one →</Link>
+        </div>
+      )}
+      {ranked.length > 0 && (
       <ol className="card lb">
         {ranked.map((r, i) => (
           <Row key={r.user.id} {...r} rank={i + 1} />
         ))}
       </ol>
+      )}
 
       {provisional.length > 0 && (
         <>

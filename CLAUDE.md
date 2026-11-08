@@ -22,3 +22,7 @@
 - Schema lives in `supabase/migrations/`; apply new files in order via the Management API
   (`POST https://api.supabase.com/v1/projects/bhdipbiapkafegmpljpa/database/query`, token injected by the session proxy).
 - After any schema change, run `supabase/tests/rules_test.sql` and the security advisor.
+- Sign-in is email link only (Google/Apple later). Supabase's built-in email sender is limited (about 2 emails/hour, and
+  free projects may only deliver to the project team's own addresses) and its email wording can't be changed on the free
+  plan. Set up a custom email sender (SMTP) before inviting real users.
+- Prototype switches in `app_config` (`allow_self_grading`, `allow_free_subscriptions`) must be turned off before launch.

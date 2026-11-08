@@ -18,16 +18,8 @@ npm test         # rules-engine tests
 npm run build
 ```
 
-This is a clickable prototype: data is seeded with a demo community and saved in
-the browser (localStorage). "Reset demo data" is at the bottom of the Rules page.
-
-## Live demo
-
-https://richwitag.github.io/Prop_Junkies_App/
-
-Deployed by `.github/workflows/deploy.yml` on every push. In the repo's
-**Settings → Pages**, *Source* must be set to **GitHub Actions** (not "Deploy from a branch",
-which serves the unbuilt source and shows a blank page).
+The app talks to the live Supabase database (see `supabase/README.md`). Sign in with your email;
+you'll get a sign-in link.
 
 ## What's in it
 
@@ -36,7 +28,8 @@ which serves the unbuilt source and shows a blank page).
 | **Feed** | *Following* (open picks from people you follow), *Community* (all open picks, most-tailed first), *Results* (recently graded). Filter by sport. Tail a pick in one tap. |
 | **Leaderboard** | Ranked leaders sorted by hit rate, units or ROI. Provisional and suspended leaders are listed separately. |
 | **Profile** | Hit rate, W-L-P record, units, ROI, streak, and a meter showing where the leader sits relative to the warning/suspension lines. Open picks + history. |
-| **Post** | Sport, market, game, pick, odds, stake, game time, reasoning. Shows to-win and break-even %. Disabled when suspended. |
+| **Post** | Single picks or parlays (up to 15 legs, priced automatically), real or practice, free or subscribers-only, optional private dollar stake. Disabled when suspended (practice still allowed). |
+| **Sign in** | Email sign-in link — no passwords. A profile is created on first sign-in. |
 | **Subscribe** | Creator profiles show price, perks and a checkout sheet (demo, no charge). Subscriber-only picks are blurred until you subscribe. |
 | **Creator settings** | On your own profile: turn subscriptions on, set a monthly price, list perks, see estimated payout. Unlocks after 20 graded picks. |
 | **Rules** | Plain-English explanation of scoring and suspension. |
@@ -69,19 +62,20 @@ All thresholds live in `STANDING_RULES`:
 ```
 src/
   domain/      types + standing rules (pure, unit-tested — reuse on the backend)
-  data/seed.ts demo community
-  store.tsx    client-side state (swap for API calls later)
+  lib/supabase.ts  database connection (publishable key only)
+  store.tsx    loads data from Supabase and runs every action through it
   components/  screens
 ```
 
 ## Next steps toward production
 
-- Backend + auth (accounts, age verification 21+, geo-restrictions)
+- Age verification (21+) and geo-restrictions
+- Custom email sender for sign-in links (Supabase's built-in one is limited — see CLAUDE.md)
 - Payments and creator payouts. Many payment processors restrict sports-picks / handicapping
   services, so confirm a provider will accept the business early. Selling in-app on iOS/Android
   means Apple/Google in-app purchase and their 15–30% cut.
 - Odds/schedule feed so games are picked from a list, and automatic grading from a scores feed
-  (the "Demo grading" buttons on your own picks stand in for this)
+  (the "Test grading" buttons on your own picks stand in for this)
 - Push notifications when someone you follow posts
 - Suspension appeals / reinstatement policy
 - Native app (the domain layer ports directly to React Native)

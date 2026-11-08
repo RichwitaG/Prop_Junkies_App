@@ -164,3 +164,21 @@ input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb
 .back { display: flex; align-items: center; gap: 4px; margin-left: -6px; padding: 4px 10px 4px 6px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font-weight: 700; font-size: 16px; cursor: pointer; }
 .back span { font-size: 26px; line-height: 1; margin-top: -3px; }
 .back:hover { background: var(--surface); }
+
+/* --- live data --- */
+.tag-practice { background: color-mix(in srgb, var(--info) 18%, transparent); color: var(--info); }
+.legs { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.leg { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+.leg-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.leg-main small { font-size: 12px; }
+.leg-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.leg-win .leg-dot { background: var(--pos); }
+.leg-loss .leg-dot { background: var(--neg); }
+.leg-push .leg-dot, .leg-void .leg-dot { background: var(--warn); }
+.leg-grade { display: flex; gap: 4px; }
+.leg-editor { border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.toast { position: sticky; top: 58px; z-index: 6; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding: 10px 12px; border-radius: 10px;
+  background: color-mix(in srgb, var(--neg) 18%, var(--surface)); border: 1px solid color-mix(in srgb, var(--neg) 45%, transparent); font-size: 14px; }
+.toast span { flex: 1; }
+.center { text-align: center; }
+.linklike { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; }

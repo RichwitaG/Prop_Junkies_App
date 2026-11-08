@@ -5,7 +5,8 @@ import { Leaderboard } from "./components/Leaderboard";
 import { NewPick } from "./components/NewPick";
 import { Profile } from "./components/Profile";
 import { Rules } from "./components/Rules";
-import { CURRENT_USER_ID } from "./data/seed";
+import { SignIn } from "./components/SignIn";
+import { useStore } from "./store";
 
 const getRoute = () => window.location.hash.replace(/^#/, "") || "/feed";
 
@@ -42,23 +43,26 @@ function useHashRoute() {
 
 const prevStack: string[] = [];
 
-const NAV = [
+const navFor = (myId: string | null) => [
   { to: "/feed", label: "Feed", icon: "🏠" },
   { to: "/leaders", label: "Leaders", icon: "🏆" },
   { to: "/new", label: "Post", icon: "➕" },
-  { to: `/u/${CURRENT_USER_ID}`, label: "Me", icon: "👤" },
+  myId ? { to: `/u/${myId}`, label: "Me", icon: "👤" } : { to: "/signin", label: "Sign in", icon: "👤" },
   { to: "/rules", label: "Rules", icon: "📘" },
 ];
 
 export default function App() {
   const route = useHashRoute();
+  const { myId, error, clearError } = useStore();
+  const NAV = navFor(myId);
   const profile = route.match(/^\/u\/(.+)$/);
 
   let page;
   let title = "Prop Junkies";
   if (route === "/leaders") (page = <Leaderboard />), (title = "Leaderboard");
-  else if (route === "/new") (page = <NewPick onDone={() => (window.location.hash = `/u/${CURRENT_USER_ID}`)} />), (title = "New pick");
+  else if (route === "/new") (page = <NewPick onDone={() => (window.location.hash = `/u/${myId}`)} />), (title = "New pick");
   else if (route === "/rules") (page = <Rules />), (title = "Rules");
+  else if (route === "/signin") (page = <SignIn />), (title = "Sign in");
   else if (profile) (page = <Profile key={profile[1]} userId={profile[1]} />), (title = "Profile");
   else page = <Feed />;
 
@@ -78,6 +82,14 @@ export default function App() {
         )}
         <span className="topbar-title">{title}</span>
       </header>
+      {error && (
+        <div className="toast" role="alert">
+          <span>{error}</span>
+          <button className="btn btn-sm btn-ghost" onClick={clearError} aria-label="Dismiss">
+            ✕
+          </button>
+        </div>
+      )}
       <main>{page}</main>
       <nav className="tabbar">
         {NAV.map((n) => (
