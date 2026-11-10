@@ -14,7 +14,7 @@ begin
   for p in
     select * from (values
       ('sharpside',      'Sharp Side Sam',  'Former oddsmaker. NFL and college football sides and totals.', '#22c55e', true,  0.62, '{NFL,NCAAF}'::text[],        '{Spread,Spread,Total,Moneyline}'::text[], 0.05, 2, false, 64, 1999),
-      ('courtvision',    'Court Vision',    'NBA and college hoops. I watch every game so you don''t have to.', '#f97316', true, 0.60, '{NBA,NCAAB}', '{Spread,Total,"Player Prop","Player Prop"}', 0.10, 3, false, 58, 1499),
+      ('courtvision',    'Court Vision',    'NBA and college hoops. I watch every game so you don''t have to.', '#f97316', true, 0.60, '{NBA,NCAAM}', '{Spread,Total,"Player Prop","Player Prop"}', 0.10, 3, false, 58, 1499),
       ('icecoldlocks',   'Ice Cold Locks',  'Hockey nerd. Puck lines and shots-on-goal props.',            '#38bdf8', false, 0.58, '{NHL}',                       '{Spread,Moneyline,"Player Prop"}',         0.05, 2, false, 41, 999),
       ('diamonddata',    'Diamond Data',    'Stat-driven MLB plays. Process over results.',                '#a855f7', false, 0.56, '{MLB}',                       '{Moneyline,Total,"Player Prop"}',          0.05, 2, false, 47, 1299),
       ('propqueen',      'Prop Queen',      'Player props only. NBA and NFL.',                             '#f43f5e', false, 0.58, '{NBA,NFL}',                   '{"Player Prop"}',                          0.15, 2, false, 45, 999),

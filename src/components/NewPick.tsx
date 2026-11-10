@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { breakEven, parlayOdds, winProfit } from "../domain/standing";
-import { MARKETS, SPORTS, type Market, type PickAccess, type Sport } from "../domain/types";
+import { marketsFor, SPORT_INFO, sportsBySeason } from "../domain/sports";
+import type { Market, PickAccess, Sport } from "../domain/types";
 import { odds as fmtOdds, pct } from "../format";
 import { useStore } from "../store";
 import { Link } from "./common";
@@ -17,6 +18,7 @@ function defaultStart() {
 interface LegDraft {
   key: number;
   sport: Sport;
+  league: string;
   market: Market;
   game: string;
   selection: string;
@@ -27,8 +29,9 @@ interface LegDraft {
 let nextKey = 1;
 const blankLeg = (prev?: LegDraft): LegDraft => ({
   key: nextKey++,
-  sport: prev?.sport ?? "NFL",
-  market: prev?.market ?? "Spread",
+  sport: prev?.sport ?? sportsBySeason()[0],
+  league: prev?.league ?? "",
+  market: prev?.market ?? marketsFor(prev?.sport ?? sportsBySeason()[0])[0],
   game: "",
   selection: "",
   odds: "-110",
@@ -82,6 +85,16 @@ export function NewPick({ onDone }: { onDone: () => void }) {
   const parlay = legs.length > 1;
   const update = (key: number, patch: Partial<LegDraft>) =>
     setLegs((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  // Changing sport resets the market if the new sport doesn't have it, and clears the league.
+  const changeSport = (key: number, sport: Sport) =>
+    setLegs((ls) =>
+      ls.map((l) =>
+        l.key !== key
+          ? l
+          : { ...l, sport, league: "", market: marketsFor(sport).includes(l.market) ? l.market : marketsFor(sport)[0] },
+      ),
+    );
+  const sportOrder = sportsBySeason();
 
   const legOdds = legs.map((l) => parseOdds(l.odds));
   const computed = parlay ? parlayOdds(legOdds) : legOdds[0];
@@ -92,7 +105,7 @@ export function NewPick({ onDone }: { onDone: () => void }) {
   const errors: string[] = [];
   legs.forEach((l, i) => {
     const n = parlay ? `Leg ${i + 1}: ` : "";
-    if (!l.game.trim()) errors.push(`${n}enter the game.`);
+    if (!l.game.trim()) errors.push(`${n}enter the ${SPORT_INFO[l.sport].eventLabel.toLowerCase()}.`);
     if (!l.selection.trim()) errors.push(`${n}enter the pick.`);
     if (!parlay && legOdds[i] === null) errors.push("Odds must be American format, e.g. -110 or +150.");
     const t = new Date(l.startsAt).getTime();
@@ -118,6 +131,7 @@ export function NewPick({ onDone }: { onDone: () => void }) {
       stakeCents: stake ? Math.round(stake * 100) : undefined,
       legs: legs.map((l, i) => ({
         sport: l.sport,
+        league: SPORT_INFO[l.sport].leagues ? l.league.trim() || null : null,
         market: l.market,
         game: l.game.trim(),
         selection: l.selection.trim(),
@@ -148,7 +162,9 @@ export function NewPick({ onDone }: { onDone: () => void }) {
         </label>
       </fieldset>
 
-      {legs.map((l, i) => (
+      {legs.map((l, i) => {
+        const info = SPORT_INFO[l.sport];
+        return (
         <div key={l.key} className={parlay ? "leg-editor" : undefined}>
           {parlay && (
             <div className="row-between">
@@ -161,20 +177,39 @@ export function NewPick({ onDone }: { onDone: () => void }) {
           <div className="row">
             <label>
               Sport
-              <select value={l.sport} onChange={(e) => update(l.key, { sport: e.target.value as Sport })}>
-                {SPORTS.map((s) => <option key={s}>{s}</option>)}
+              <select value={l.sport} onChange={(e) => changeSport(l.key, e.target.value as Sport)}>
+                {sportOrder.map((s) => (
+                  <option key={s} value={s}>
+                    {SPORT_INFO[s].icon} {s}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
               Market
               <select value={l.market} onChange={(e) => update(l.key, { market: e.target.value as Market })}>
-                {MARKETS.map((m) => <option key={m}>{m}</option>)}
+                {marketsFor(l.sport).map((m) => <option key={m}>{m}</option>)}
               </select>
             </label>
           </div>
+          {info.leagues && (
+            <label>
+              League
+              <input
+                value={l.league}
+                maxLength={60}
+                list={`leagues-${l.sport}`}
+                onChange={(e) => update(l.key, { league: e.target.value })}
+                placeholder={info.leagues[0]}
+              />
+              <datalist id={`leagues-${l.sport}`}>
+                {info.leagues.map((lg) => <option key={lg} value={lg} />)}
+              </datalist>
+            </label>
+          )}
           <label>
-            Game
-            <input value={l.game} maxLength={80} onChange={(e) => update(l.key, { game: e.target.value })} placeholder="Eagles @ Cowboys" />
+            {info.eventLabel}
+            <input value={l.game} maxLength={80} onChange={(e) => update(l.key, { game: e.target.value })} placeholder={info.eventPlaceholder} />
           </label>
           <label>
             Pick
@@ -182,7 +217,7 @@ export function NewPick({ onDone }: { onDone: () => void }) {
               value={l.selection}
               maxLength={80}
               onChange={(e) => update(l.key, { selection: e.target.value })}
-              placeholder={l.market === "Player Prop" ? "Jalen Hurts o1.5 Pass TD" : "Eagles -3.5"}
+              placeholder={info.selectionPlaceholder}
             />
           </label>
           <div className="row">
@@ -191,12 +226,13 @@ export function NewPick({ onDone }: { onDone: () => void }) {
               <input value={l.odds} inputMode="numeric" onChange={(e) => update(l.key, { odds: e.target.value })} />
             </label>
             <label>
-              Game time
+              Start time
               <input type="datetime-local" value={l.startsAt} onChange={(e) => update(l.key, { startsAt: e.target.value })} />
             </label>
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {legs.length < MAX_LEGS && (
         <button type="button" className="btn btn-block" onClick={() => setLegs((ls) => [...ls, blankLeg(ls[ls.length - 1])])}>

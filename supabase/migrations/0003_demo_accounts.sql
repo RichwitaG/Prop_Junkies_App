@@ -42,7 +42,7 @@ begin
       teams := '{Celtics,Knicks,Nuggets,Lakers,Thunder,Mavericks,Bucks,Heat,Warriors,Suns,Cavaliers,76ers}';
       props := '{"star o27.5 Pts","PG o8.5 Ast","C o11.5 Reb","star o2.5 3PM","wing o24.5 PRA"}';
       spreads := '{-4.5,+4.5,-2.5,+2.5,-7.5,+7.5,-1.5}'; total := (array['218.5','222.5','226.5','231.5'])[1 + floor(random() * 4)];
-    when 'NCAAB' then
+    when 'NCAAM' then
       teams := '{Duke,UNC,Kansas,Kentucky,UConn,Gonzaga,Houston,Purdue}';
       props := '{"Guard o18.5 Pts","Big o9.5 Reb"}';
       spreads := '{-5.5,+5.5,-2.5,+2.5,-8.5,+8.5}'; total := (array['138.5','142.5','147.5'])[1 + floor(random() * 3)];

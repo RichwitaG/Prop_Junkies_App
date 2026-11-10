@@ -1,10 +1,5 @@
-export type Sport = "NFL" | "NBA" | "MLB" | "NHL" | "NCAAF" | "NCAAB" | "Soccer";
-
-export const SPORTS: Sport[] = ["NFL", "NBA", "MLB", "NHL", "NCAAF", "NCAAB", "Soccer"];
-
-export type Market = "Spread" | "Moneyline" | "Total" | "Player Prop";
-
-export const MARKETS: Market[] = ["Spread", "Moneyline", "Total", "Player Prop"];
+export { ALL_MARKETS, SPORT_IDS, type Market, type Sport } from "./sports";
+import type { Market, Sport } from "./sports";
 
 /** Who can see a pick before its game is graded. Graded picks are always public. */
 export type PickAccess = "free" | "subscribers";
@@ -16,6 +11,8 @@ export interface Leg {
   id: string;
   position: number;
   sport: Sport;
+  /** Only for sports that span many leagues (Soccer, Basketball, Ice Hockey). */
+  league: string | null;
   game: string;
   market: Market;
   selection: string;

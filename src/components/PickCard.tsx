@@ -3,7 +3,8 @@ import { pickNet } from "../domain/standing";
 import type { Leg, LockedPick, Pick, PickResult } from "../domain/types";
 import { odds, pct, relTime, units } from "../format";
 import { useStore } from "../store";
-import { Avatar, DemoTag, Link, StandingBadge } from "./common";
+import { Avatar, DemoTag, Link, sportLabel, StandingBadge } from "./common";
+import { SPORT_INFO } from "../domain/sports";
 import { SubscribeButton } from "./Subscribe";
 
 const RESULT_LABEL: Record<PickResult, string> = {
@@ -65,7 +66,9 @@ export function PickCard({ pick, showAuthor = true }: { pick: Pick; showAuthor?:
         ) : (
           first && (
             <>
-              <span className="tag">{first.sport}</span>
+              <span className="tag">
+                {SPORT_INFO[first.sport]?.icon} {sportLabel(first.sport, first.league)}
+              </span>
               <span className="tag tag-muted">{first.market}</span>
             </>
           )
@@ -149,7 +152,7 @@ function LegRow({ leg, canGrade }: { leg: Leg; canGrade: boolean }) {
         <strong>{leg.selection}</strong>
         {leg.odds !== null && <span className="odds small"> {odds(leg.odds)}</span>}
         <small className="muted">
-          {leg.sport} · {leg.game}
+          {SPORT_INFO[leg.sport]?.icon} {sportLabel(leg.sport, leg.league)} · {leg.game}
         </small>
       </span>
       {canGrade && leg.result === "pending" && (
@@ -181,7 +184,9 @@ export function LockedCard({ pick, showAuthor = true }: { pick: LockedPick; show
     <article className="card pick">
       {showAuthor && <Author userId={pick.userId} />}
       <div className="pick-meta">
-        {parlay ? <span className="tag">{pick.legCount}-leg parlay</span> : <span className="tag">{pick.sports[0]}</span>}
+        {parlay ? <span className="tag">{pick.legCount}-leg parlay</span> : <span className="tag">
+            {SPORT_INFO[pick.sports[0]]?.icon} {pick.sports[0]}
+          </span>}
         <span className="tag tag-premium">Subscribers</span>
         <span className="muted">{parlay ? pick.games.join(" · ") : pick.games[0]}</span>
       </div>

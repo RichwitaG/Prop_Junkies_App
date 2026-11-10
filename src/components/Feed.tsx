@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { SPORTS, type LockedPick, type Pick, type Sport } from "../domain/types";
+import type { LockedPick, Pick, Sport } from "../domain/types";
 import { useStore } from "../store";
-import { Chips, Link } from "./common";
+import { Chips, Link, SportBar } from "./common";
 import { LockedCard, PickCard } from "./PickCard";
 
 const TABS = ["Following", "Community", "Results"] as const;
 type Tab = (typeof TABS)[number];
-const SPORT_FILTERS = ["All", ...SPORTS] as const;
 
 type Item = { kind: "pick"; pick: Pick } | { kind: "locked"; pick: LockedPick };
 
@@ -52,7 +51,7 @@ export function Feed() {
   return (
     <section>
       <Chips options={TABS} value={tab} onChange={setTab} />
-      <Chips options={SPORT_FILTERS} value={sport} onChange={setSport} />
+      <SportBar value={sport} onChange={setSport} />
 
       {!ready ? (
         <div className="empty">Loading picks…</div>

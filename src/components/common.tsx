@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { StandingStatus } from "../domain/standing";
+import { SPORT_INFO, sportsBySeason, type Sport } from "../domain/sports";
 import type { User } from "../domain/types";
 
 export function Avatar({ user, size = 40 }: { user: User; size?: number }) {
@@ -63,3 +64,23 @@ export function Chips<T extends string>({
     </div>
   );
 }
+
+/** Swipeable sport row with icons. In-season sports come first; off-season ones move to the end. */
+export function SportBar({ value, onChange }: { value: Sport | "All"; onChange: (v: Sport | "All") => void }) {
+  const items: (Sport | "All")[] = ["All", ...sportsBySeason()];
+  return (
+    <div className="sportbar" role="tablist" aria-label="Sport">
+      {items.map((s) => (
+        <button key={s} role="tab" aria-selected={s === value} className={s === value ? "sport active" : "sport"} onClick={() => onChange(s)}>
+          <span className="sport-icon" aria-hidden>
+            {s === "All" ? "🔥" : SPORT_INFO[s].icon}
+          </span>
+          <span className="sport-label">{s}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** "Soccer · Premier League" or just "NFL". */
+export const sportLabel = (sport: Sport, league: string | null | undefined) => (league ? `${sport} · ${league}` : sport);

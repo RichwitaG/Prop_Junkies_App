@@ -19,7 +19,7 @@ export interface NewTicket {
   analysis: string;
   /** Private: only the author ever sees it. */
   stakeCents?: number;
-  legs: { sport: Sport; game: string; market: Market; selection: string; odds: number | null; startsAt: string }[];
+  legs: { sport: Sport; league: string | null; game: string; market: Market; selection: string; odds: number | null; startsAt: string }[];
 }
 
 interface Data {
@@ -129,6 +129,7 @@ async function loadData(myId: string | null): Promise<Data> {
           id: l.id,
           position: l.position,
           sport: l.sport,
+          league: l.league,
           game: l.game,
           market: l.market,
           selection: l.selection,
@@ -282,6 +283,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                     ...(t.stakeCents ? { stake_cents: t.stakeCents } : {}),
                     legs: t.legs.map((l) => ({
                       sport: l.sport,
+                      league: l.league,
                       game: l.game,
                       market: l.market,
                       selection: l.selection,

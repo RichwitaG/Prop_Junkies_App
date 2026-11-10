@@ -2,7 +2,7 @@
 
 Project: `prop-junkies` · `https://bhdipbiapkafegmpljpa.supabase.co`
 
-- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`.
+- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`, `0004_more_sports.sql`.
 - `seed/demo_seed.sql` — 11 DEMO bettors with ~4 months of history (applied). An hourly job (`demo-tick`) grades
   their finished picks and posts new ones so the feed stays alive.
 - `tests/rules_test.sql` — creates throwaway users, checks every rule (parlays, practice picks,
