@@ -1,0 +1,203 @@
+{
+  "sports": [
+    {
+      "id": "NFL",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ]
+    },
+    {
+      "id": "NBA",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ]
+    },
+    {
+      "id": "MLB",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ]
+    },
+    {
+      "id": "NHL",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ]
+    },
+    {
+      "id": "NCAAF",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ]
+    },
+    {
+      "id": "NCAAM",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ]
+    },
+    {
+      "id": "NCAAW",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ]
+    },
+    {
+      "id": "WNBA",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ]
+    },
+    {
+      "id": "Soccer",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ],
+      "leagues": [
+        "Premier League",
+        "La Liga",
+        "Serie A",
+        "Bundesliga",
+        "Ligue 1",
+        "Champions League",
+        "Europa League",
+        "MLS",
+        "Liga MX",
+        "Eredivisie",
+        "Primeira Liga",
+        "Brasileirão",
+        "World Cup",
+        "International Friendly"
+      ]
+    },
+    {
+      "id": "Basketball",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ],
+      "leagues": [
+        "EuroLeague",
+        "EuroCup",
+        "Liga ACB",
+        "NBL (Australia)",
+        "CBA (China)",
+        "B.League (Japan)",
+        "Turkish BSL",
+        "Greek Basket League",
+        "FIBA",
+        "G League"
+      ]
+    },
+    {
+      "id": "Ice Hockey",
+      "markets": [
+        "Spread",
+        "Moneyline",
+        "Total",
+        "Player Prop"
+      ],
+      "leagues": [
+        "KHL",
+        "SHL (Sweden)",
+        "Liiga (Finland)",
+        "DEL (Germany)",
+        "NL (Switzerland)",
+        "Czech Extraliga",
+        "AHL",
+        "IIHF World Championship",
+        "World Juniors",
+        "Olympics"
+      ]
+    },
+    {
+      "id": "Tennis",
+      "markets": [
+        "Moneyline",
+        "Set Spread",
+        "Total Sets",
+        "Total Games"
+      ]
+    },
+    {
+      "id": "Golf",
+      "markets": [
+        "Outright Winner",
+        "Top 5",
+        "Top 10",
+        "Top 20",
+        "Head-to-Head"
+      ]
+    },
+    {
+      "id": "UFC",
+      "markets": [
+        "Moneyline",
+        "Method of Victory",
+        "Total Rounds"
+      ]
+    },
+    {
+      "id": "Boxing",
+      "markets": [
+        "Moneyline",
+        "Method of Victory",
+        "Total Rounds"
+      ]
+    },
+    {
+      "id": "Table Tennis",
+      "markets": [
+        "Moneyline",
+        "Game Spread",
+        "Total Games"
+      ]
+    }
+  ],
+  "markets": [
+    "Spread",
+    "Moneyline",
+    "Total",
+    "Player Prop",
+    "Set Spread",
+    "Total Sets",
+    "Total Games",
+    "Game Spread",
+    "Outright Winner",
+    "Top 5",
+    "Top 10",
+    "Top 20",
+    "Head-to-Head",
+    "Method of Victory",
+    "Total Rounds"
+  ]
+}

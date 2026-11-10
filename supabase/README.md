@@ -2,11 +2,23 @@
 
 Project: `prop-junkies` · `https://bhdipbiapkafegmpljpa.supabase.co`
 
-- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`, `0004_more_sports.sql`.
+- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`, `0004_more_sports.sql`, `0005_ticket_scanning.sql`.
 - `seed/demo_seed.sql` — 11 DEMO bettors with ~4 months of history (applied). An hourly job (`demo-tick`) grades
   their finished picks and posts new ones so the feed stays alive.
 - `tests/rules_test.sql` — creates throwaway users, checks every rule (parlays, practice picks,
   locked picks, private money, suspension, who can grade/post), then rolls everything back.
+
+## Ticket scanning (`functions/scan-slip`)
+
+A Supabase Edge Function that reads 1–8 screenshots of one ticket with Claude (`claude-opus-5-5`) and returns the
+legs for the user to review. It never posts and never stores the screenshots.
+
+- Needs the secret `ANTHROPIC_API_KEY` (Supabase → Edge Functions → Secrets).
+- Signed-in users only; 25 scans per user per 24 hours (logged in `scan_usage` with token counts).
+- `sports.json` is generated from `src/domain/sports.ts` — run `npx vite-node scripts/gen-scan-sports.ts` after
+  changing sports or markets (a test fails if they drift).
+- Deploy: `POST https://api.supabase.com/v1/projects/bhdipbiapkafegmpljpa/functions/deploy?slug=scan-slip` (multipart:
+  `metadata` + `index.ts` + `sports.json`).
 
 ## What's in it
 

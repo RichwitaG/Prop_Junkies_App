@@ -96,3 +96,15 @@ export function sportsBySeason(date = new Date()): Sport[] {
 }
 
 export const marketsFor = (sport: Sport) => SPORT_INFO[sport].markets;
+
+/** The sports/markets list given to the ticket scanner (supabase/functions/scan-slip/sports.json). */
+export function scanSportsData() {
+  return {
+    sports: SPORT_IDS.map((id) => ({
+      id,
+      markets: [...SPORT_INFO[id].markets],
+      ...(SPORT_INFO[id].leagues ? { leagues: SPORT_INFO[id].leagues } : {}),
+    })),
+    markets: [...ALL_MARKETS],
+  };
+}

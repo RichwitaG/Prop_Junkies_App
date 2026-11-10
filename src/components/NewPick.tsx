@@ -5,8 +5,9 @@ import type { Market, PickAccess, Sport } from "../domain/types";
 import { odds as fmtOdds, pct } from "../format";
 import { useStore } from "../store";
 import { Link } from "./common";
+import { ScanTicket, type ScanResult } from "./ScanTicket";
 
-const MAX_LEGS = 15;
+const MAX_LEGS = 25;
 
 function defaultStart() {
   const d = new Date(Date.now() + 3 * 3600_000);
@@ -24,6 +25,10 @@ interface LegDraft {
   selection: string;
   odds: string;
   startsAt: string;
+  /** Set when the leg came from a scanned ticket. */
+  confidence?: "high" | "medium" | "low";
+  note?: string | null;
+  slipStatus?: string;
 }
 
 let nextKey = 1;
@@ -37,6 +42,14 @@ const blankLeg = (prev?: LegDraft): LegDraft => ({
   odds: "-110",
   startsAt: prev?.startsAt ?? defaultStart(),
 });
+
+/** ISO time → the local "YYYY-MM-DDTHH:mm" a datetime-local input wants ("" if unknown). */
+const toLocalInput = (iso: string | null) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+};
+const fmt = (o: number) => (o > 0 ? `+${o}` : String(o));
 
 const parseOdds = (s: string) => {
   const n = Number(s.trim().replace("−", "-").replace(/^\+/, ""));
@@ -54,6 +67,32 @@ export function NewPick({ onDone }: { onDone: () => void }) {
   const [stakeText, setStakeText] = useState("");
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [scan, setScan] = useState<ScanResult | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const applyScan = (r: ScanResult) => {
+    setLegs(
+      r.legs.map((l) => ({
+        key: nextKey++,
+        sport: l.sport,
+        league: l.league ?? "",
+        market: l.market,
+        game: l.game,
+        selection: l.selection,
+        odds: l.odds !== null ? fmt(l.odds) : "",
+        startsAt: toLocalInput(l.startsAt),
+        confidence: l.confidence,
+        note: l.note,
+        slipStatus: l.status,
+      })),
+    );
+    setCustomOdds(r.legs.length > 1 && r.ticketOdds !== null ? fmt(r.ticketOdds) : "");
+    setStakeText(r.wager ? String(r.wager) : "");
+    setScan(r);
+    setConfirmed(false);
+    setTouched(true);
+    window.scrollTo(0, 0);
+  };
 
   if (!myId) {
     return (
@@ -115,6 +154,7 @@ export function NewPick({ onDone }: { onDone: () => void }) {
     errors.push(customOdds.trim() ? "Parlay odds must be American format, e.g. +596." : "Enter odds for every leg, or the parlay odds from your slip.");
   if (!(units > 0 && units <= 5)) errors.push("Stake must be between 0.1u and 5u.");
   if (stake !== null && !(stake > 0 && stake <= 1_000_000)) errors.push("Enter your private stake as a dollar amount, or leave it blank.");
+  if (scan && !confirmed) errors.push("Tick the box to confirm you checked every leg against your slip.");
   const valid = errors.length === 0;
 
   const submit = async (e: FormEvent) => {
@@ -146,6 +186,17 @@ export function NewPick({ onDone }: { onDone: () => void }) {
   return (
     <form className="card form" onSubmit={submit}>
       <h2>Post a pick</h2>
+      {scan ? (
+        <ScanReview scan={scan} legCount={legs.length} onDiscard={() => {
+          setScan(null);
+          setLegs([blankLeg()]);
+          setCustomOdds("");
+          setStakeText("");
+          setTouched(false);
+        }} />
+      ) : (
+        <ScanTicket onScanned={applyScan} />
+      )}
       {stats.status === "warning" && !practice && (
         <div className="banner banner-warning">You're at risk of suspension — be selective.</div>
       )}
@@ -165,14 +216,25 @@ export function NewPick({ onDone }: { onDone: () => void }) {
       {legs.map((l, i) => {
         const info = SPORT_INFO[l.sport];
         return (
-        <div key={l.key} className={parlay ? "leg-editor" : undefined}>
-          {parlay && (
+        <div key={l.key} className={[parlay || l.confidence ? "leg-editor" : "", l.confidence ? `leg-${l.confidence}` : ""].join(" ")}>
+          {(parlay || l.confidence) && (
             <div className="row-between">
-              <strong className="small">Leg {i + 1}</strong>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setLegs((ls) => ls.filter((x) => x.key !== l.key))}>
-                Remove
-              </button>
+              <strong className="small">
+                {parlay ? `Leg ${i + 1}` : "Your pick"}
+                {l.confidence && l.confidence !== "high" && (
+                  <span className={`conf conf-${l.confidence}`}>{l.confidence === "low" ? "Check carefully" : "Double-check"}</span>
+                )}
+              </strong>
+              {parlay && (
+                <button type="button" className="btn btn-sm btn-ghost" onClick={() => setLegs((ls) => ls.filter((x) => x.key !== l.key))}>
+                  Remove
+                </button>
+              )}
             </div>
+          )}
+          {l.note && <p className="small conf-note">⚠️ {l.note}</p>}
+          {l.slipStatus && ["won", "lost", "push", "void", "live"].includes(l.slipStatus) && (
+            <p className="small conf-note">⚠️ The slip shows this leg as {l.slipStatus}. Picks can only be posted before games start.</p>
           )}
           <div className="row">
             <label>
@@ -293,6 +355,12 @@ export function NewPick({ onDone }: { onDone: () => void }) {
           </p>
         ))}
 
+      {scan && (
+        <label className="confirm">
+          <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+          I checked every leg, the odds and the start times against my slip.
+        </label>
+      )}
       {touched && !valid && <ul className="errors">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
       <p className="muted small">
         {practice
@@ -303,5 +371,38 @@ export function NewPick({ onDone }: { onDone: () => void }) {
         {busy ? "Posting…" : practice ? "Post practice pick" : "Post pick"}
       </button>
     </form>
+  );
+}
+
+/** Summary shown above the legs after a scan. */
+function ScanReview({ scan, legCount, onDiscard }: { scan: ScanResult; legCount: number; onDiscard: () => void }) {
+  const unsure = scan.legs.filter((l) => l.confidence !== "high").length;
+  const missingTimes = scan.legs.filter((l) => !l.startsAt).length;
+  const countMismatch = scan.legsShownOnSlip !== null && scan.legsShownOnSlip !== scan.legs.length;
+  return (
+    <div className="banner banner-provisional scan-review">
+      <div className="row-between">
+        <strong>
+          📋 Review your scanned ticket{scan.sportsbook ? ` from ${scan.sportsbook}` : ""}
+        </strong>
+        <button type="button" className="btn btn-sm btn-ghost" onClick={onDiscard}>
+          Start over
+        </button>
+      </div>
+      <p className="small">
+        We read {scan.legs.length} leg{scan.legs.length === 1 ? "" : "s"}
+        {scan.ticketOdds !== null && <> at {fmt(scan.ticketOdds)}</>}. Check each one against your slip and fix anything
+        that's off — nothing is posted until you confirm.
+      </p>
+      <ul className="small">
+        {countMismatch && (
+          <li>⚠️ The slip says {scan.legsShownOnSlip} legs but we found {scan.legs.length}. Add any missing screenshot or leg.</li>
+        )}
+        {unsure > 0 && <li>⚠️ {unsure} leg{unsure === 1 ? " is" : "s are"} highlighted for a closer look.</li>}
+        {missingTimes > 0 && <li>⚠️ Add the start time for {missingTimes} leg{missingTimes === 1 ? "" : "s"}.</li>}
+        {scan.warnings.map((w) => <li key={w}>⚠️ {w}</li>)}
+        {legCount !== scan.legs.length && <li>You've changed the number of legs to {legCount}.</li>}
+      </ul>
+    </div>
   );
 }

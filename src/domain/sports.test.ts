@@ -31,3 +31,12 @@ describe("sports", () => {
     expect(SPORT_INFO.NFL.leagues).toBeUndefined();
   });
 });
+
+describe("scanner sports list", () => {
+  it("matches src/domain/sports.ts (run scripts/gen-scan-sports.ts if this fails)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { scanSportsData } = await import("./sports");
+    const onDisk = JSON.parse(readFileSync("supabase/functions/scan-slip/sports.json", "utf8"));
+    expect(onDisk).toEqual(scanSportsData());
+  });
+});

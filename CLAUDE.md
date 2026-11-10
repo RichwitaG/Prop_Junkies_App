@@ -27,3 +27,5 @@
   plan. Set up a custom email sender (SMTP) before inviting real users.
 - Demo accounts (`profiles.is_demo`, DEMO tag in the app) must be removed before launch: `select private.scrub_demo();`
 - Prototype switches in `app_config` (`allow_self_grading`, `allow_free_subscriptions`) must be turned off before launch.
+- Ticket scanning: `supabase/functions/scan-slip` (Claude reads screenshots; user must confirm before posting). Secret
+  `ANTHROPIC_API_KEY` lives only in Supabase secrets — Rich adds it in the dashboard, never in chat or the repo.
