@@ -9,11 +9,11 @@ import { LockedCard, PickCard } from "./PickCard";
 import { SubscribeButton } from "./Subscribe";
 
 const OTHER_TABS = ["Open", "History"] as const;
-const MY_TABS = ["Open", "History", "Practice"] as const;
+const MY_TABS = ["Open", "History", "Practice", "Saved"] as const;
 type Tab = (typeof MY_TABS)[number];
 
 export function Profile({ userId }: { userId: string }) {
-  const { ready, myId, email, userById, statsFor, picksFor, locked, following, isSelling, actions } = useStore();
+  const { ready, myId, email, userById, statsFor, picksFor, picks, locked, following, isSelling, mySaves, actions } = useStore();
   const [tab, setTab] = useState<Tab>("Open");
   const [editing, setEditing] = useState(false);
   const user = userById(userId);
@@ -24,9 +24,12 @@ export function Profile({ userId }: { userId: string }) {
   const mine = userId === myId;
   const isFollowing = following.includes(userId);
   const all = [...picksFor(userId)].sort((a, b) => b.startsAt.localeCompare(a.startsAt));
-  const list = all.filter((p) =>
-    tab === "Practice" ? p.isPractice : !p.isPractice && (tab === "Open" ? p.result === "pending" : p.result !== "pending"),
-  );
+  const list =
+    tab === "Saved"
+      ? mySaves.map((id) => picks.find((p) => p.id === id)).filter((p): p is NonNullable<typeof p> => !!p)
+      : all.filter((p) =>
+          tab === "Practice" ? p.isPractice : !p.isPractice && (tab === "Open" ? p.result === "pending" : p.result !== "pending"),
+        );
   const lockedHere = tab === "Open" ? locked.filter((p) => p.userId === userId) : [];
   const tails = all.reduce((n, p) => n + p.tailedBy.length, 0);
   const needsSetup = mine && user.handle.startsWith("user_");
@@ -103,21 +106,23 @@ export function Profile({ userId }: { userId: string }) {
       {mine && <CreatorSettingsPanel />}
 
       <Chips options={mine ? MY_TABS : OTHER_TABS} value={tab} onChange={setTab} />
-      {mine && tab !== "History" && (
+      {mine && (tab === "Open" || tab === "Practice") && (
         <Link to="/new" className="btn btn-primary btn-block">
           + Post a {tab === "Practice" ? "practice " : ""}pick
         </Link>
       )}
       {tab === "Practice" && <p className="muted small">Only you can see practice picks. They never count toward your record.</p>}
       {list.length === 0 && lockedHere.length === 0 && (
-        <div className="empty">No {tab === "Open" ? "open" : tab === "History" ? "graded" : "practice"} picks yet.</div>
+        <div className="empty">
+          {tab === "Saved" ? "Nothing saved yet. Tap the bookmark on any pick to keep it here." : `No ${tab === "Open" ? "open" : tab === "History" ? "graded" : "practice"} picks yet.`}
+        </div>
       )}
       <div className="stack">
         {lockedHere.map((p) => (
           <LockedCard key={p.id} pick={p} showAuthor={false} />
         ))}
         {list.map((p) => (
-          <PickCard key={p.id} pick={p} showAuthor={false} />
+          <PickCard key={p.id} pick={p} showAuthor={tab === "Saved"} />
         ))}
       </div>
 

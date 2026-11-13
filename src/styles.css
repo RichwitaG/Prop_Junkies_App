@@ -227,3 +227,32 @@ input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb
 /* Long names (e.g. doubles teams) wrap instead of pushing cards wider than the screen. */
 .card, .leg-main, .pick-meta, .selection { min-width: 0; overflow-wrap: break-word; }
 .stack > * { min-width: 0; }
+
+/* --- social row --- */
+.social { display: flex; align-items: center; gap: 2px; margin: 10px -6px 0; }
+.soc { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border: 0; border-radius: 999px; background: transparent;
+  color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+.soc:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.soc:disabled { cursor: default; opacity: .55; }
+.soc svg { flex: none; }
+.soc-spacer { flex: 1; }
+.soc.on-like { color: #f43f5e; }
+.soc.on-dislike { color: var(--warn); }
+.soc.on-repost { color: var(--accent); }
+.soc.on-save { color: var(--text); }
+.soc-note { text-align: right; color: var(--accent); margin-top: 2px; }
+.reposted { margin: -4px 0 8px; }
+.reposted a { color: var(--muted); font-weight: 600; }
+
+/* --- comments --- */
+.comments-sheet { max-height: 80vh; }
+.comments { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.comment-list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 55vh; padding-right: 2px; }
+.comment { display: flex; gap: 10px; align-items: flex-start; }
+.comment-body { overflow-wrap: break-word; }
+.comment-menu { position: relative; }
+.comment-menu .menu { position: absolute; right: 0; top: 30px; z-index: 30; display: flex; flex-direction: column; padding: 4px; min-width: 150px; }
+.comment-menu .menu button { text-align: left; padding: 8px 10px; border: 0; background: none; color: var(--text); border-radius: 8px; cursor: pointer; }
+.comment-menu .menu button:hover { background: var(--surface-2); }
+.comment-box { display: flex; gap: 8px; }
+.comment-box input { flex: 1; }

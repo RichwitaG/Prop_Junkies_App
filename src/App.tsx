@@ -6,6 +6,7 @@ import { NewPick } from "./components/NewPick";
 import { Profile } from "./components/Profile";
 import { Rules } from "./components/Rules";
 import { SignIn } from "./components/SignIn";
+import { TicketPage } from "./components/TicketPage";
 import { useStore } from "./store";
 
 const getRoute = () => window.location.hash.replace(/^#/, "") || "/feed";
@@ -56,6 +57,7 @@ export default function App() {
   const { myId, error, clearError } = useStore();
   const NAV = navFor(myId);
   const profile = route.match(/^\/u\/(.+)$/);
+  const ticket = route.match(/^\/t\/([0-9a-f-]+)$/);
 
   let page;
   let title = "Prop Junkies";
@@ -63,6 +65,7 @@ export default function App() {
   else if (route === "/new") (page = <NewPick onDone={() => (window.location.hash = `/u/${myId}`)} />), (title = "New pick");
   else if (route === "/rules") (page = <Rules />), (title = "Rules");
   else if (route === "/signin") (page = <SignIn />), (title = "Sign in");
+  else if (ticket) (page = <TicketPage key={ticket[1]} id={ticket[1]} />), (title = "Pick");
   else if (profile) (page = <Profile key={profile[1]} userId={profile[1]} />), (title = "Profile");
   else page = <Feed />;
 

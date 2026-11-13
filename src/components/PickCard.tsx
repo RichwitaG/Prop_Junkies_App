@@ -5,6 +5,7 @@ import { odds, pct, relTime, units } from "../format";
 import { useStore } from "../store";
 import { Avatar, DemoTag, Link, sportLabel, StandingBadge } from "./common";
 import { SPORT_INFO } from "../domain/sports";
+import { SocialBar } from "./Social";
 import { SubscribeButton } from "./Subscribe";
 
 /** Let long names like "Siniakova/Townsend" wrap after the slash instead of mid-word. */
@@ -43,7 +44,22 @@ function Author({ userId }: { userId: string }) {
   );
 }
 
-export function PickCard({ pick, showAuthor = true }: { pick: Pick; showAuthor?: boolean }) {
+/** "🔁 @handle reposted" above a ticket that shows up because someone you follow reposted it. */
+function RepostedBy({ userId }: { userId?: string }) {
+  const { userById } = useStore();
+  const u = userId ? userById(userId) : undefined;
+  if (!u) return null;
+  return (
+    <div className="reposted small muted">
+      🔁 <Link to={`/u/${u.id}`}>@{u.handle}</Link> reposted
+    </div>
+  );
+}
+
+const shareTextFor = (pick: Pick) =>
+  pick.legs.length > 1 ? `${pick.legs.length}-leg parlay on Prop Junkies` : `${pick.legs[0]?.selection ?? "A pick"} on Prop Junkies`;
+
+export function PickCard({ pick, showAuthor = true, repostedBy }: { pick: Pick; showAuthor?: boolean; repostedBy?: string }) {
   const { myId, statsFor, isSelling, allowSelfGrading, actions } = useStore();
   const [busy, setBusy] = useState(false);
   const mine = pick.userId === myId;
@@ -60,6 +76,7 @@ export function PickCard({ pick, showAuthor = true }: { pick: Pick; showAuthor?:
 
   return (
     <article className={`card pick result-${pick.result}`}>
+      <RepostedBy userId={repostedBy} />
       {showAuthor && <Author userId={pick.userId} />}
 
       <div className="pick-meta">
@@ -104,6 +121,8 @@ export function PickCard({ pick, showAuthor = true }: { pick: Pick; showAuthor?:
       )}
 
       {pick.analysis && <p className="analysis">{pick.analysis}</p>}
+
+      {!pick.isPractice && <SocialBar ticketId={pick.id} ownerId={pick.userId} shareText={shareTextFor(pick)} />}
 
       <footer className="pick-foot">
         <span className={`result-pill pill-${pick.result}`}>
@@ -181,10 +200,11 @@ function LegRow({ leg, canGrade }: { leg: Leg; canGrade: boolean }) {
 }
 
 /** A subscriber-only pick the viewer can't see yet: the games, never the pick. */
-export function LockedCard({ pick, showAuthor = true }: { pick: LockedPick; showAuthor?: boolean }) {
+export function LockedCard({ pick, showAuthor = true, repostedBy }: { pick: LockedPick; showAuthor?: boolean; repostedBy?: string }) {
   const parlay = pick.legCount > 1;
   return (
     <article className="card pick">
+      <RepostedBy userId={repostedBy} />
       {showAuthor && <Author userId={pick.userId} />}
       <div className="pick-meta">
         {parlay ? <span className="tag">{pick.legCount}-leg parlay</span> : <span className="tag">
@@ -201,6 +221,7 @@ export function LockedCard({ pick, showAuthor = true }: { pick: LockedPick; show
         <p className="small">🔒 Subscriber-only pick. It goes public once the game is graded.</p>
         <SubscribeButton userId={pick.userId} label="Unlock with a subscription" />
       </div>
+      <SocialBar ticketId={pick.id} ownerId={pick.userId} shareText="A subscriber-only pick on Prop Junkies" locked />
       <footer className="pick-foot">
         <span className="result-pill pill-pending">Pending</span>
         <span className="muted small">Starts {relTime(pick.startsAt)}</span>

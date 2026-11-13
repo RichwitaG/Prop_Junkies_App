@@ -31,9 +31,35 @@ interface Data {
   allowSelfGrading: boolean;
   /** The signed-in user's private unit size in cents (null until they set it). */
   unitSizeCents: number | null;
+  /** Public like/dislike/comment/repost counts per ticket. */
+  social: Record<string, SocialCounts>;
+  /** The signed-in user's own reactions, saves and blocks. */
+  myReactions: Record<string, "like" | "dislike">;
+  mySaves: string[];
+  blocked: string[];
+  reposts: { ticketId: string; userId: string; createdAt: string }[];
 }
 
-const EMPTY: Data = { users: [], picks: [], locked: [], following: [], subscriptions: [], allowSelfGrading: false, unitSizeCents: null };
+export interface SocialCounts {
+  likes: number;
+  dislikes: number;
+  comments: number;
+  reposts: number;
+}
+export const NO_SOCIAL: SocialCounts = { likes: 0, dislikes: 0, comments: 0, reposts: 0 };
+
+export interface Comment {
+  id: string;
+  ticketId: string;
+  userId: string;
+  body: string;
+  createdAt: string;
+}
+
+const EMPTY: Data = {
+  users: [], picks: [], locked: [], following: [], subscriptions: [], allowSelfGrading: false, unitSizeCents: null,
+  social: {}, myReactions: {}, mySaves: [], blocked: [], reposts: [],
+};
 
 interface Store extends Data {
   ready: boolean;
@@ -59,6 +85,14 @@ interface Store extends Data {
     updateProfile: (patch: { displayName?: string; handle?: string; bio?: string }) => Promise<boolean>;
     updateCreator: (patch: { enabled?: boolean; price?: number; perks?: string[] }) => Promise<boolean>;
     setUnitSize: (cents: number) => Promise<boolean>;
+    react: (ticketId: string, kind: "like" | "dislike") => Promise<boolean>;
+    toggleSave: (ticketId: string) => Promise<boolean>;
+    toggleRepost: (ticketId: string) => Promise<boolean>;
+    loadComments: (ticketId: string) => Promise<Comment[]>;
+    addComment: (ticketId: string, body: string) => Promise<Comment | null>;
+    deleteComment: (c: Comment) => Promise<boolean>;
+    reportComment: (c: Comment, reason: string) => Promise<boolean>;
+    block: (userId: string) => Promise<boolean>;
     signIn: (email: string) => Promise<boolean>;
     signOut: () => Promise<void>;
   };
@@ -74,7 +108,7 @@ async function loadData(myId: string | null): Promise<Data> {
       return (r.data ?? []) as T;
     });
 
-  const [profiles, settings, creators, tickets, previews, tails, follows, subs, config, mine] = await Promise.all([
+  const [profiles, settings, creators, tickets, previews, tails, follows, subs, config, mine, social, reactions, saves, blocks, reposts] = await Promise.all([
     q<any[]>(supabase.from("profiles").select("*")),
     q<any[]>(supabase.from("creator_settings").select("user_id, enabled")),
     q<any[]>(supabase.from("creator_public").select("*")),
@@ -87,6 +121,11 @@ async function loadData(myId: string | null): Promise<Data> {
       : Promise.resolve([]),
     q<any[]>(supabase.from("app_config").select("allow_self_grading")),
     myId ? q<any[]>(supabase.from("user_settings").select("unit_size_cents").eq("user_id", myId)) : Promise.resolve([]),
+    q<any[]>(supabase.from("ticket_social").select("*")),
+    myId ? q<any[]>(supabase.from("ticket_reactions").select("ticket_id, kind").eq("user_id", myId)) : Promise.resolve([]),
+    myId ? q<any[]>(supabase.from("ticket_saves").select("ticket_id").eq("user_id", myId)) : Promise.resolve([]),
+    myId ? q<any[]>(supabase.from("user_blocks").select("blocked_id").eq("blocker_id", myId)) : Promise.resolve([]),
+    q<any[]>(supabase.from("ticket_reposts").select("ticket_id, user_id, created_at").order("created_at", { ascending: false })),
   ]);
 
   const tailsBy = new Map<string, string[]>();
@@ -168,6 +207,13 @@ async function loadData(myId: string | null): Promise<Data> {
     subscriptions: subs.map((s) => s.creator_id),
     allowSelfGrading: config[0]?.allow_self_grading ?? false,
     unitSizeCents: mine[0]?.unit_size_cents ?? null,
+    social: Object.fromEntries(
+      social.map((x) => [x.ticket_id, { likes: x.likes, dislikes: x.dislikes, comments: x.comments, reposts: x.reposts }]),
+    ),
+    myReactions: Object.fromEntries(reactions.map((r) => [r.ticket_id, r.kind])),
+    mySaves: saves.map((x) => x.ticket_id),
+    blocked: blocks.map((x) => x.blocked_id),
+    reposts: reposts.map((r) => ({ ticketId: r.ticket_id, userId: r.user_id, createdAt: r.created_at })),
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -229,6 +275,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       await reload();
       return true;
+    };
+    /** Apply a change on screen right away, then save it; undo the change if saving fails. */
+    const optimistic = async (
+      change: (d: Data) => Data,
+      save: () => PromiseLike<{ error: { message: string } | null }>,
+    ) => {
+      let before: Data | null = null;
+      setData((d) => ((before = d), change(d)));
+      const { error } = await save();
+      if (error) {
+        if (before) setData(before);
+        setError(friendly(error.message));
+        return false;
+      }
+      return true;
+    };
+    const bump = (d: Data, id: string, patch: Partial<Record<keyof SocialCounts, number>>): Data => {
+      const cur = d.social[id] ?? NO_SOCIAL;
+      const next = { ...cur };
+      for (const [k, v] of Object.entries(patch)) next[k as keyof SocialCounts] = Math.max(0, cur[k as keyof SocialCounts] + (v ?? 0));
+      return { ...d, social: { ...d.social, [id]: next } };
     };
     const needSignIn = () => {
       setError("Sign in first — it only takes your email.");
@@ -325,6 +392,107 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           act(() =>
             supabase.from("user_settings").upsert({ user_id: myId!, unit_size_cents: cents, updated_at: new Date().toISOString() }),
           ),
+        react: (ticketId, kind) => {
+          if (!myId) return needSignIn();
+          const prev = data.myReactions[ticketId];
+          const delta = (k: "like" | "dislike", sign: number) => (k === "like" ? { likes: sign } : { dislikes: sign });
+          if (prev === kind) {
+            return optimistic(
+              (d) => {
+                const { [ticketId]: _, ...rest } = d.myReactions;
+                return { ...bump(d, ticketId, delta(kind, -1)), myReactions: rest };
+              },
+              () => supabase.from("ticket_reactions").delete().match({ ticket_id: ticketId, user_id: myId }),
+            );
+          }
+          return optimistic(
+            (d) => {
+              let n = bump(d, ticketId, delta(kind, 1));
+              if (prev) n = bump(n, ticketId, delta(prev, -1));
+              return { ...n, myReactions: { ...n.myReactions, [ticketId]: kind } };
+            },
+            () => supabase.from("ticket_reactions").upsert({ ticket_id: ticketId, user_id: myId, kind }),
+          );
+        },
+        toggleSave: (ticketId) => {
+          if (!myId) return needSignIn();
+          const saved = data.mySaves.includes(ticketId);
+          return optimistic(
+            (d) => ({ ...d, mySaves: saved ? d.mySaves.filter((x) => x !== ticketId) : [ticketId, ...d.mySaves] }),
+            () =>
+              saved
+                ? supabase.from("ticket_saves").delete().match({ ticket_id: ticketId, user_id: myId })
+                : supabase.from("ticket_saves").insert({ ticket_id: ticketId, user_id: myId }),
+          );
+        },
+        toggleRepost: (ticketId) => {
+          if (!myId) return needSignIn();
+          const mine = data.reposts.some((r) => r.ticketId === ticketId && r.userId === myId);
+          return optimistic(
+            (d) => ({
+              ...bump(d, ticketId, { reposts: mine ? -1 : 1 }),
+              reposts: mine
+                ? d.reposts.filter((r) => !(r.ticketId === ticketId && r.userId === myId))
+                : [{ ticketId, userId: myId, createdAt: new Date().toISOString() }, ...d.reposts],
+            }),
+            () =>
+              mine
+                ? supabase.from("ticket_reposts").delete().match({ ticket_id: ticketId, user_id: myId })
+                : supabase.from("ticket_reposts").insert({ ticket_id: ticketId, user_id: myId }),
+          );
+        },
+        loadComments: async (ticketId) => {
+          const { data: rows, error } = await supabase
+            .from("ticket_comments")
+            .select("id, ticket_id, user_id, body, created_at")
+            .eq("ticket_id", ticketId)
+            .order("created_at", { ascending: true });
+          if (error) {
+            setError(friendly(error.message));
+            return [];
+          }
+          return (rows ?? [])
+            .filter((r) => !data.blocked.includes(r.user_id))
+            .map((r) => ({ id: r.id, ticketId: r.ticket_id, userId: r.user_id, body: r.body, createdAt: r.created_at }));
+        },
+        addComment: async (ticketId, body) => {
+          if (!myId) {
+            await needSignIn();
+            return null;
+          }
+          const { data: row, error } = await supabase
+            .from("ticket_comments")
+            .insert({ ticket_id: ticketId, user_id: myId, body: body.trim() })
+            .select("id, ticket_id, user_id, body, created_at")
+            .single();
+          if (error || !row) {
+            setError(friendly(error?.message ?? "Couldn't post that comment."));
+            return null;
+          }
+          setData((d) => bump(d, ticketId, { comments: 1 }));
+          return { id: row.id, ticketId: row.ticket_id, userId: row.user_id, body: row.body, createdAt: row.created_at };
+        },
+        deleteComment: (c) =>
+          optimistic(
+            (d) => bump(d, c.ticketId, { comments: -1 }),
+            () => supabase.from("ticket_comments").delete().eq("id", c.id),
+          ),
+        reportComment: async (c, reason) => {
+          if (!myId) return needSignIn();
+          const { error } = await supabase.from("comment_reports").insert({ comment_id: c.id, reporter_id: myId, reason });
+          if (error && !/duplicate key/i.test(error.message)) {
+            setError(friendly(error.message));
+            return false;
+          }
+          return true;
+        },
+        block: (userId) => {
+          if (!myId) return needSignIn();
+          return optimistic(
+            (d) => ({ ...d, blocked: [...d.blocked, userId] }),
+            () => supabase.from("user_blocks").insert({ blocker_id: myId, blocked_id: userId }),
+          );
+        },
         signIn: async (email) => {
           const { error } = await supabase.auth.signInWithOtp({
             email,

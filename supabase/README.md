@@ -2,9 +2,10 @@
 
 Project: `prop-junkies` · `https://bhdipbiapkafegmpljpa.supabase.co`
 
-- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`, `0004_more_sports.sql`, `0005_ticket_scanning.sql`, `0006_unit_size_and_markets.sql`.
+- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`, `0004_more_sports.sql`, `0005_ticket_scanning.sql`, `0006_unit_size_and_markets.sql`, `0007_social.sql`, `0008_demo_social.sql`, `0009_demo_times.sql`.
 - `seed/demo_seed.sql` — 11 DEMO bettors with ~4 months of history (applied). An hourly job (`demo-tick`) grades
   their finished picks and posts new ones so the feed stays alive.
+- `tests/social_test.sql` — the same for likes/dislikes, comments, reposts, saves, reports and blocks.
 - `tests/rules_test.sql` — creates throwaway users, checks every rule (parlays, practice picks,
   locked picks, private money, suspension, who can grade/post), then rolls everything back.
 
@@ -28,6 +29,11 @@ legs for the user to review. It never posts and never stores the screenshots.
 | `tickets`, `ticket_legs`, `ticket_revisions` | Author always. Others: free picks, all graded picks, and subscriber picks if subscribed. Practice picks: author only. |
 | `ticket_previews` (view) | Everyone — game and sport only for locked picks, never the pick itself |
 | `subscriptions` | The subscriber and the creator |
+| `ticket_social` (view) | Everyone — like/dislike/comment/repost counts, including on locked picks |
+| `ticket_comments`, `ticket_reposts` | Anyone who can see the ticket. Comments: author or the ticket's creator can delete. |
+| `ticket_reactions` | Each person sees only their own like/dislike (counts are public via `ticket_social`) |
+| `ticket_saves`, `user_blocks` | Owner only |
+| `comment_reports` | Write-only for users; read them in the Supabase dashboard |
 | `ticket_money`, `bankroll_entries`, `user_settings` (unit size) | Owner only. Signed-out visitors are denied outright. |
 
 Picks are created only through `post_ticket()` and graded only through `grade_leg()`; nobody can
