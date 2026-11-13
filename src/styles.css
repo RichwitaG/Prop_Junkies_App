@@ -126,7 +126,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); flex: 1; min-width: 0; }
 .form .row { display: flex; gap: 10px; flex-wrap: wrap; }
 .form .row label { min-width: 120px; }
-input, select, textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; color: var(--text); width: 100%; }
+/* 16px stops iPhone Safari from zooming in when a box is tapped (and staying zoomed). */
+input, select, textarea { font-size: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; color: var(--text); width: 100%; }
 input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
 .errors { margin: 0; padding-left: 18px; color: var(--neg); font-size: 13px; }
 
@@ -215,3 +216,14 @@ input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb
 .conf-note { margin: 0; color: var(--warn); }
 .confirm { flex-direction: row !important; align-items: flex-start; gap: 10px !important; padding: 12px; border: 1px solid var(--accent); border-radius: 10px; color: var(--text) !important; font-size: 14px !important; }
 .confirm input { width: auto; margin-top: 3px; accent-color: var(--accent); }
+
+/* --- dollar wager → units --- */
+.stake-box { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
+.stake-box p { margin: 0; }
+.stake-box .row { align-items: flex-end; }
+.stake-box .linklike { align-self: flex-start; }
+.units-out .stat-value { color: var(--accent); }
+
+/* Long names (e.g. doubles teams) wrap instead of pushing cards wider than the screen. */
+.card, .leg-main, .pick-meta, .selection { min-width: 0; overflow-wrap: break-word; }
+.stack > * { min-width: 0; }

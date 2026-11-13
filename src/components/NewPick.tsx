@@ -57,7 +57,7 @@ const parseOdds = (s: string) => {
 };
 
 export function NewPick({ onDone }: { onDone: () => void }) {
-  const { myId, statsFor, isSelling, actions } = useStore();
+  const { myId, statsFor, isSelling, unitSizeCents, actions } = useStore();
   const [legs, setLegs] = useState<LegDraft[]>(() => [blankLeg()]);
   const [unitsText, setUnitsText] = useState("1");
   const [analysis, setAnalysis] = useState("");
@@ -65,6 +65,11 @@ export function NewPick({ onDone }: { onDone: () => void }) {
   const [practice, setPractice] = useState(false);
   const [customOdds, setCustomOdds] = useState("");
   const [stakeText, setStakeText] = useState("");
+  // Most people enter the dollar wager and the app works out units; some prefer typing units.
+  const [byUnits, setByUnits] = useState(false);
+  const [unitSizeText, setUnitSizeText] = useState("");
+  const [savingUnit, setSavingUnit] = useState(false);
+  const [editingUnit, setEditingUnit] = useState(false);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   const [scan, setScan] = useState<ScanResult | null>(null);
@@ -88,6 +93,7 @@ export function NewPick({ onDone }: { onDone: () => void }) {
     );
     setCustomOdds(r.legs.length > 1 && r.ticketOdds !== null ? fmt(r.ticketOdds) : "");
     setStakeText(r.wager ? String(r.wager) : "");
+    if (r.wager) setByUnits(false);
     setScan(r);
     setConfirmed(false);
     setTouched(true);
@@ -138,8 +144,10 @@ export function NewPick({ onDone }: { onDone: () => void }) {
   const legOdds = legs.map((l) => parseOdds(l.odds));
   const computed = parlay ? parlayOdds(legOdds) : legOdds[0];
   const ticketOdds = parlay && customOdds.trim() ? parseOdds(customOdds) : computed;
-  const units = Number(unitsText);
   const stake = stakeText.trim() ? Number(stakeText.replace(/[$,]/g, "")) : null;
+  const unitSize = unitSizeCents ? unitSizeCents / 100 : null;
+  // Units shown publicly = dollar wager ÷ your private unit size.
+  const units = byUnits ? Number(unitsText) : stake && unitSize ? Math.round((stake / unitSize) * 100) / 100 : NaN;
 
   const errors: string[] = [];
   legs.forEach((l, i) => {
@@ -152,8 +160,15 @@ export function NewPick({ onDone }: { onDone: () => void }) {
   });
   if (parlay && ticketOdds === null)
     errors.push(customOdds.trim() ? "Parlay odds must be American format, e.g. +596." : "Enter odds for every leg, or the parlay odds from your slip.");
-  if (!(units > 0 && units <= 5)) errors.push("Stake must be between 0.1u and 5u.");
-  if (stake !== null && !(stake > 0 && stake <= 1_000_000)) errors.push("Enter your private stake as a dollar amount, or leave it blank.");
+  if (byUnits) {
+    if (!(units >= 0.01 && units <= 25)) errors.push("Units must be between 0.01u and 25u.");
+  } else if (!unitSize) {
+    errors.push("Set your unit size so we can work out the units.");
+  } else if (stake === null || !(stake > 0 && stake <= 1_000_000)) {
+    errors.push("Enter your wager in dollars.");
+  } else if (!(units >= 0.01 && units <= 25)) {
+    errors.push(`That's ${units}u — picks must be between 0.01u and 25u.`);
+  }
   if (scan && !confirmed) errors.push("Tick the box to confirm you checked every leg against your slip.");
   const valid = errors.length === 0;
 
@@ -168,7 +183,7 @@ export function NewPick({ onDone }: { onDone: () => void }) {
       odds: ticketOdds ?? undefined,
       units,
       analysis: analysis.trim(),
-      stakeCents: stake ? Math.round(stake * 100) : undefined,
+      stakeCents: !byUnits && stake ? Math.round(stake * 100) : undefined,
       legs: legs.map((l, i) => ({
         sport: l.sport,
         league: SPORT_INFO[l.sport].leagues ? l.league.trim() || null : null,
@@ -317,19 +332,68 @@ export function NewPick({ onDone }: { onDone: () => void }) {
         </p>
       )}
 
-      <div className="row">
-        <label>
-          Stake (units)
-          <input value={unitsText} inputMode="decimal" onChange={(e) => setUnitsText(e.target.value)} />
-        </label>
-        <label>
-          Your real stake (private, optional)
-          <input value={stakeText} inputMode="decimal" onChange={(e) => setStakeText(e.target.value)} placeholder="$" />
-        </label>
+      <div className="stake-box">
+        {!byUnits && (!unitSize || editingUnit) ? (
+          <>
+            <strong className="small">Set your unit size (private)</strong>
+            <p className="muted small">
+              What's 1 unit for you in dollars? Your wagers are shown to others only in units — nobody ever sees your dollars.
+            </p>
+            <div className="row">
+              <label>
+                1 unit =
+                <input value={unitSizeText} inputMode="decimal" onChange={(e) => setUnitSizeText(e.target.value)} placeholder="$100" />
+              </label>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={savingUnit || !(Number(unitSizeText.replace(/[$,]/g, "")) >= 1)}
+                onClick={async () => {
+                  setSavingUnit(true);
+                  if (await actions.setUnitSize(Math.round(Number(unitSizeText.replace(/[$,]/g, "")) * 100))) setEditingUnit(false);
+                  setSavingUnit(false);
+                }}
+              >
+                {savingUnit ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </>
+        ) : byUnits ? (
+          <label>
+            Stake (units)
+            <input value={unitsText} inputMode="decimal" onChange={(e) => setUnitsText(e.target.value)} />
+          </label>
+        ) : (
+          <div className="row">
+            <label>
+              Wager ($, private)
+              <input value={stakeText} inputMode="decimal" onChange={(e) => setStakeText(e.target.value)} placeholder="$25" />
+            </label>
+            <div className="stat units-out">
+              <div className="stat-value">{units >= 0 ? `${units}u` : "—"}</div>
+              <div className="stat-label">
+                1u = ${unitSize!.toLocaleString()} ·{" "}
+                <button
+                  type="button"
+                  className="linklike"
+                  onClick={() => {
+                    setUnitSizeText(String(unitSize));
+                    setEditingUnit(true);
+                  }}
+                >
+                  change
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <button type="button" className="linklike small" onClick={() => setByUnits((b) => !b)}>
+          {byUnits ? "Enter the dollar wager instead" : "Enter units instead"}
+        </button>
       </div>
       {ticketOdds !== null && units > 0 && (
         <p className="muted small">
-          To win {winProfit(ticketOdds, units).toFixed(2)}u · break-even at {pct(breakEven(ticketOdds))}. Only you ever see your real stake.
+          To win {winProfit(ticketOdds, units).toFixed(2)}u · break-even at {pct(breakEven(ticketOdds))}. Others see units only, never dollars.
         </p>
       )}
 

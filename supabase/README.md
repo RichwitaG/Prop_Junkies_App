@@ -2,7 +2,7 @@
 
 Project: `prop-junkies` · `https://bhdipbiapkafegmpljpa.supabase.co`
 
-- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`, `0004_more_sports.sql`, `0005_ticket_scanning.sql`.
+- `migrations/` — schema, applied in order. Applied so far: `0001_init.sql`, `0002_harden.sql`, `0003_demo_accounts.sql`, `0004_more_sports.sql`, `0005_ticket_scanning.sql`, `0006_unit_size_and_markets.sql`.
 - `seed/demo_seed.sql` — 11 DEMO bettors with ~4 months of history (applied). An hourly job (`demo-tick`) grades
   their finished picks and posts new ones so the feed stays alive.
 - `tests/rules_test.sql` — creates throwaway users, checks every rule (parlays, practice picks,
@@ -28,7 +28,7 @@ legs for the user to review. It never posts and never stores the screenshots.
 | `tickets`, `ticket_legs`, `ticket_revisions` | Author always. Others: free picks, all graded picks, and subscriber picks if subscribed. Practice picks: author only. |
 | `ticket_previews` (view) | Everyone — game and sport only for locked picks, never the pick itself |
 | `subscriptions` | The subscriber and the creator |
-| `ticket_money`, `bankroll_entries` | Owner only. Signed-out visitors are denied outright. |
+| `ticket_money`, `bankroll_entries`, `user_settings` (unit size) | Owner only. Signed-out visitors are denied outright. |
 
 Picks are created only through `post_ticket()` and graded only through `grade_leg()`; nobody can
 edit or insert ticket rows directly. Every change is written to `ticket_revisions`.

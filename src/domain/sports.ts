@@ -12,13 +12,18 @@ export const SPORT_IDS = [
 ] as const;
 export type Sport = (typeof SPORT_IDS)[number];
 
-const TEAM_MARKETS = ["Spread", "Moneyline", "Total", "Player Prop"] as const;
+const TEAM_MARKETS = ["Spread", "Moneyline", "Total", "Player Prop", "Half / Period", "Game Prop", "Other"] as const;
+const HOCKEY_MARKETS = [...TEAM_MARKETS.slice(0, 4), "Both Teams to Score", ...TEAM_MARKETS.slice(4)] as const;
+const SOCCER_MARKETS = [
+  "Moneyline", "Spread", "Total", "Both Teams to Score", "Double Chance", "Draw No Bet", "Player Prop", "Half / Period", "Game Prop", "Other",
+] as const;
 
 export const ALL_MARKETS = [
   ...TEAM_MARKETS,
   "Set Spread", "Total Sets", "Total Games", "Game Spread",
   "Outright Winner", "Top 5", "Top 10", "Top 20", "Head-to-Head",
   "Method of Victory", "Total Rounds",
+  "Both Teams to Score", "Double Chance", "Draw No Bet", "Half / Period", "Game Prop", "Set Betting", "Round Betting", "Other",
 ] as const;
 export type Market = (typeof ALL_MARKETS)[number];
 
@@ -54,32 +59,32 @@ export const SPORT_INFO: Record<Sport, SportInfo> = Object.fromEntries(
       ["NFL", team("🏈", months(9, 2), "Eagles @ Cowboys", "Eagles -3.5")],
       ["NBA", team("🏀", months(10, 6), "Celtics @ Knicks", "Celtics -4.5")],
       ["MLB", team("⚾", months(3, 10), "Yankees @ Red Sox", "Yankees ML")],
-      ["NHL", team("🏒", months(10, 6), "Oilers @ Avalanche", "Oilers +1.5")],
+      ["NHL", { ...team("🏒", months(10, 6), "Oilers @ Avalanche", "Oilers +1.5"), markets: HOCKEY_MARKETS }],
       ["NCAAF", team("🏈", months(8, 1), "Georgia @ Alabama", "Georgia -6.5")],
       ["NCAAM", team("🏀", months(11, 4), "Duke @ UNC", "Duke -2.5")],
       ["NCAAW", team("🏀", months(11, 4), "South Carolina @ UConn", "UConn -5.5")],
       ["WNBA", team("🏀", months(5, 10), "Liberty @ Aces", "Aces -3.5")],
-      ["Soccer", { ...team("⚽", [], "Arsenal vs Liverpool", "Arsenal ML"), eventLabel: "Match",
+      ["Soccer", { ...team("⚽", [], "Arsenal vs Liverpool", "Arsenal ML"), markets: SOCCER_MARKETS, eventLabel: "Match",
         leagues: ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1", "Champions League", "Europa League",
           "MLS", "Liga MX", "Eredivisie", "Primeira Liga", "Brasileirão", "World Cup", "International Friendly"] }],
       ["Basketball", { ...team("🏀", [], "Real Madrid vs Barcelona", "Real Madrid -4.5"),
         leagues: ["EuroLeague", "EuroCup", "Liga ACB", "NBL (Australia)", "CBA (China)", "B.League (Japan)",
           "Turkish BSL", "Greek Basket League", "FIBA", "G League"] }],
-      ["Ice Hockey", { ...team("🏒", months(8, 5), "SKA vs CSKA", "SKA ML"),
+      ["Ice Hockey", { ...team("🏒", months(8, 5), "SKA vs CSKA", "SKA ML"), markets: HOCKEY_MARKETS,
         leagues: ["KHL", "SHL (Sweden)", "Liiga (Finland)", "DEL (Germany)", "NL (Switzerland)", "Czech Extraliga",
           "AHL", "IIHF World Championship", "World Juniors", "Olympics"] }],
     ] as [Sport, Omit<SportInfo, "id">][]
   )
     .concat([
-      ["Tennis", { icon: "🎾", season: months(1, 11), markets: ["Moneyline", "Set Spread", "Total Sets", "Total Games"],
+      ["Tennis", { icon: "🎾", season: months(1, 11), markets: ["Moneyline", "Set Spread", "Total Sets", "Total Games", "Set Betting", "Player Prop", "Game Prop", "Other"],
         eventLabel: "Match", eventPlaceholder: "Alcaraz vs Sinner", selectionPlaceholder: "Alcaraz ML" }],
-      ["Golf", { icon: "⛳", season: [], markets: ["Outright Winner", "Top 5", "Top 10", "Top 20", "Head-to-Head"],
+      ["Golf", { icon: "⛳", season: [], markets: ["Outright Winner", "Top 5", "Top 10", "Top 20", "Head-to-Head", "Other"],
         eventLabel: "Tournament", eventPlaceholder: "The Masters", selectionPlaceholder: "Scheffler Top 10" }],
-      ["UFC", { icon: "🥋", season: [], markets: ["Moneyline", "Method of Victory", "Total Rounds"],
+      ["UFC", { icon: "🥋", season: [], markets: ["Moneyline", "Method of Victory", "Total Rounds", "Round Betting", "Other"],
         eventLabel: "Fight", eventPlaceholder: "Fighter A vs Fighter B", selectionPlaceholder: "Fighter A by KO/TKO" }],
-      ["Boxing", { icon: "🥊", season: [], markets: ["Moneyline", "Method of Victory", "Total Rounds"],
+      ["Boxing", { icon: "🥊", season: [], markets: ["Moneyline", "Method of Victory", "Total Rounds", "Round Betting", "Other"],
         eventLabel: "Fight", eventPlaceholder: "Fighter A vs Fighter B", selectionPlaceholder: "Over 9.5 Rounds" }],
-      ["Table Tennis", { icon: "🏓", season: [], markets: ["Moneyline", "Game Spread", "Total Games"],
+      ["Table Tennis", { icon: "🏓", season: [], markets: ["Moneyline", "Game Spread", "Total Games", "Other"],
         eventLabel: "Match", eventPlaceholder: "Player A vs Player B", selectionPlaceholder: "Player A -1.5 Games" }],
     ])
     .map(([id, info]) => [id, { id, ...info }]),

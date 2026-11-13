@@ -40,3 +40,13 @@ describe("scanner sports list", () => {
     expect(onDisk).toEqual(scanSportsData());
   });
 });
+
+describe("extra markets", () => {
+  it("every sport has an Other catch-all, and NHL/Soccer have Both Teams to Score", async () => {
+    const { marketsFor, SPORT_IDS } = await import("./sports");
+    for (const s of SPORT_IDS) expect(marketsFor(s)).toContain("Other");
+    expect(marketsFor("NHL")).toContain("Both Teams to Score");
+    expect(marketsFor("Soccer")).toContain("Both Teams to Score");
+    expect(marketsFor("Tennis")).toContain("Set Betting");
+  });
+});

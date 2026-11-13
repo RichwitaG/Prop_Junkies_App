@@ -67,7 +67,7 @@ You receive the screenshots of ONE ticket, in order. Long tickets are split acro
 
 For each leg:
 - sport: pick from the allowed sports. Use the specific league entry when it exists (NFL, NBA, WNBA, MLB, NHL, NCAAF, NCAAM, NCAAW). Otherwise use the general sport (Soccer, Basketball, Ice Hockey) and put the league name in "league", e.g. "Premier League", "EuroLeague", "KHL". league is null for every other sport.
-- market: the closest market allowed for that sport. Money Line → Moneyline; run line / puck line / point spread / handicap → Spread (Set Spread or Game Spread for tennis and table tennis); total points, goals or runs → Total; any single-player stat → Player Prop.
+- market: the market from that sport's allowed list that matches the slip. Money Line → Moneyline; run line / puck line / point spread / handicap → Spread (Set Spread or Game Spread for tennis and table tennis); full-game total points, goals or runs → Total; any single-player stat → Player Prop; a bet on one half, quarter, period or inning → Half / Period; a team or game prop (first to score, race to 10, odd/even, corners) → Game Prop; correct set score → Set Betting; winning round → Round Betting. If nothing in the list fits, use Other. Never put a bet in a market it doesn't belong to.
 - game: the matchup or event as shown, e.g. "Chiefs @ Bills", "Siniakova/Townsend vs Errani/Paolini".
 - selection: the pick as shown, including the line, e.g. "Bills -3.5", "Under 2.5", "Josh Allen o34.5 Rush Yds".
 - odds: the leg's American odds as an integer (e.g. -325, 150), or null if not shown.

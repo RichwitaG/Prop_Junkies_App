@@ -7,6 +7,9 @@ import { Avatar, DemoTag, Link, sportLabel, StandingBadge } from "./common";
 import { SPORT_INFO } from "../domain/sports";
 import { SubscribeButton } from "./Subscribe";
 
+/** Let long names like "Siniakova/Townsend" wrap after the slash instead of mid-word. */
+const soft = (t: string) => t.replace(/\//g, "/\u200b");
+
 const RESULT_LABEL: Record<PickResult, string> = {
   pending: "Pending",
   win: "Win",
@@ -74,7 +77,7 @@ export function PickCard({ pick, showAuthor = true }: { pick: Pick; showAuthor?:
           )
         )}
         {pick.access === "subscribers" && isSelling(pick.userId) && <span className="tag tag-premium">Subscribers</span>}
-        {!parlay && first && <span className="muted">{first.game}</span>}
+        {!parlay && first && <span className="muted">{soft(first.game)}</span>}
       </div>
 
       {parlay ? (
@@ -93,7 +96,7 @@ export function PickCard({ pick, showAuthor = true }: { pick: Pick; showAuthor?:
       ) : (
         first && (
           <div className="pick-line">
-            <span className="selection">{first.selection}</span>
+            <span className="selection">{soft(first.selection)}</span>
             <span className="odds">{odds(pick.odds)}</span>
             <span className="stake">{pick.units}u</span>
           </div>
@@ -149,10 +152,10 @@ function LegRow({ leg, canGrade }: { leg: Leg; canGrade: boolean }) {
     <li className={`leg leg-${leg.result}`}>
       <span className="leg-dot" aria-label={RESULT_LABEL[leg.result]} />
       <span className="leg-main">
-        <strong>{leg.selection}</strong>
+        <strong>{soft(leg.selection)}</strong>
         {leg.odds !== null && <span className="odds small"> {odds(leg.odds)}</span>}
         <small className="muted">
-          {SPORT_INFO[leg.sport]?.icon} {sportLabel(leg.sport, leg.league)} · {leg.game}
+          {SPORT_INFO[leg.sport]?.icon} {sportLabel(leg.sport, leg.league)} · {soft(leg.game)}
         </small>
       </span>
       {canGrade && leg.result === "pending" && (

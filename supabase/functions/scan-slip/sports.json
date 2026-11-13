@@ -6,7 +6,10 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ]
     },
     {
@@ -15,7 +18,10 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ]
     },
     {
@@ -24,7 +30,10 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ]
     },
     {
@@ -33,7 +42,11 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Both Teams to Score",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ]
     },
     {
@@ -42,7 +55,10 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ]
     },
     {
@@ -51,7 +67,10 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ]
     },
     {
@@ -60,7 +79,10 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ]
     },
     {
@@ -69,16 +91,25 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ]
     },
     {
       "id": "Soccer",
       "markets": [
-        "Spread",
         "Moneyline",
+        "Spread",
         "Total",
-        "Player Prop"
+        "Both Teams to Score",
+        "Double Chance",
+        "Draw No Bet",
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ],
       "leagues": [
         "Premier League",
@@ -103,7 +134,10 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ],
       "leagues": [
         "EuroLeague",
@@ -124,7 +158,11 @@
         "Spread",
         "Moneyline",
         "Total",
-        "Player Prop"
+        "Player Prop",
+        "Both Teams to Score",
+        "Half / Period",
+        "Game Prop",
+        "Other"
       ],
       "leagues": [
         "KHL",
@@ -145,7 +183,11 @@
         "Moneyline",
         "Set Spread",
         "Total Sets",
-        "Total Games"
+        "Total Games",
+        "Set Betting",
+        "Player Prop",
+        "Game Prop",
+        "Other"
       ]
     },
     {
@@ -155,7 +197,8 @@
         "Top 5",
         "Top 10",
         "Top 20",
-        "Head-to-Head"
+        "Head-to-Head",
+        "Other"
       ]
     },
     {
@@ -163,7 +206,9 @@
       "markets": [
         "Moneyline",
         "Method of Victory",
-        "Total Rounds"
+        "Total Rounds",
+        "Round Betting",
+        "Other"
       ]
     },
     {
@@ -171,7 +216,9 @@
       "markets": [
         "Moneyline",
         "Method of Victory",
-        "Total Rounds"
+        "Total Rounds",
+        "Round Betting",
+        "Other"
       ]
     },
     {
@@ -179,7 +226,8 @@
       "markets": [
         "Moneyline",
         "Game Spread",
-        "Total Games"
+        "Total Games",
+        "Other"
       ]
     }
   ],
@@ -188,6 +236,9 @@
     "Moneyline",
     "Total",
     "Player Prop",
+    "Half / Period",
+    "Game Prop",
+    "Other",
     "Set Spread",
     "Total Sets",
     "Total Games",
@@ -198,6 +249,14 @@
     "Top 20",
     "Head-to-Head",
     "Method of Victory",
-    "Total Rounds"
+    "Total Rounds",
+    "Both Teams to Score",
+    "Double Chance",
+    "Draw No Bet",
+    "Half / Period",
+    "Game Prop",
+    "Set Betting",
+    "Round Betting",
+    "Other"
   ]
 }

@@ -29,9 +29,11 @@ interface Data {
   following: string[];
   subscriptions: string[];
   allowSelfGrading: boolean;
+  /** The signed-in user's private unit size in cents (null until they set it). */
+  unitSizeCents: number | null;
 }
 
-const EMPTY: Data = { users: [], picks: [], locked: [], following: [], subscriptions: [], allowSelfGrading: false };
+const EMPTY: Data = { users: [], picks: [], locked: [], following: [], subscriptions: [], allowSelfGrading: false, unitSizeCents: null };
 
 interface Store extends Data {
   ready: boolean;
@@ -56,6 +58,7 @@ interface Store extends Data {
     gradeLeg: (legId: string, result: PickResult) => Promise<boolean>;
     updateProfile: (patch: { displayName?: string; handle?: string; bio?: string }) => Promise<boolean>;
     updateCreator: (patch: { enabled?: boolean; price?: number; perks?: string[] }) => Promise<boolean>;
+    setUnitSize: (cents: number) => Promise<boolean>;
     signIn: (email: string) => Promise<boolean>;
     signOut: () => Promise<void>;
   };
@@ -71,7 +74,7 @@ async function loadData(myId: string | null): Promise<Data> {
       return (r.data ?? []) as T;
     });
 
-  const [profiles, settings, creators, tickets, previews, tails, follows, subs, config] = await Promise.all([
+  const [profiles, settings, creators, tickets, previews, tails, follows, subs, config, mine] = await Promise.all([
     q<any[]>(supabase.from("profiles").select("*")),
     q<any[]>(supabase.from("creator_settings").select("user_id, enabled")),
     q<any[]>(supabase.from("creator_public").select("*")),
@@ -83,6 +86,7 @@ async function loadData(myId: string | null): Promise<Data> {
       ? q<any[]>(supabase.from("subscriptions").select("creator_id").eq("subscriber_id", myId).eq("status", "active"))
       : Promise.resolve([]),
     q<any[]>(supabase.from("app_config").select("allow_self_grading")),
+    myId ? q<any[]>(supabase.from("user_settings").select("unit_size_cents").eq("user_id", myId)) : Promise.resolve([]),
   ]);
 
   const tailsBy = new Map<string, string[]>();
@@ -163,6 +167,7 @@ async function loadData(myId: string | null): Promise<Data> {
     following: follows.map((f) => f.followee_id),
     subscriptions: subs.map((s) => s.creator_id),
     allowSelfGrading: config[0]?.allow_self_grading ?? false,
+    unitSizeCents: mine[0]?.unit_size_cents ?? null,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -315,6 +320,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               ...(patch.perks !== undefined && { perks: patch.perks }),
               updated_at: new Date().toISOString(),
             }),
+          ),
+        setUnitSize: (cents) =>
+          act(() =>
+            supabase.from("user_settings").upsert({ user_id: myId!, unit_size_cents: cents, updated_at: new Date().toISOString() }),
           ),
         signIn: async (email) => {
           const { error } = await supabase.auth.signInWithOtp({

@@ -13,6 +13,9 @@
 - Practice ("paper") picks are allowed but NEVER count toward hit rate, standing or leaderboards.
 - Bankroll and all personal financial info are ALWAYS private. Never show balances publicly.
 - Verified picks (slip-scan badge): skipped for now.
+- Units come from dollars: each user sets a private unit size; the app converts the dollar wager to units. Dollars never show publicly.
+- Social on tickets: like, dislike (count is PUBLIC), comments, repost, share, save. Keep it slim — don't overwhelm.
+- Live scores on legs and auto-grading come with the sports data provider; no deep stats pages. Re-check results for a few days after games to catch stat corrections.
 - Still needed: a sports data provider whose terms allow showing data publicly.
 - The repo is public: never commit API keys or secrets.
 
